@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Z-Tech S&S - POS & Control</title>
+  
+  <!-- Configuración PWA (Instalable en móvil) -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Z-Tech POS">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/891/891462.png">
+
+  <!-- Librería Escáner Cámara -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --sale: #2563eb;
+      --sale-hover: #1d4ed8;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --wsp: #25d366;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .sub-title {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .grid-forms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 15px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: var(--primary);
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 6px;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .form-group.full {
+      grid-template-columns: 1fr;
+    }
+
+    input, select, textarea {
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+      background-color: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--sale);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-save { background-color: var(--accent); }
+    .btn-save:hover { background-color: var(--accent-hover); }
+
+    .btn-sale { background-color: var(--sale); }
+    .btn-sale:hover { background-color: var(--sale-hover); }
+
+    .btn-danger { background-color: var(--danger); }
+    .btn-danger:hover { background-color: var(--danger-hover); }
+
+    .btn-secondary { background-color: #64748b; }
+
+    .btn-action {
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .btn-print { background-color: #6366f1; }
+    .btn-wsp { background-color: var(--wsp); }
+    .btn-delete { background-color: var(--danger); }
+
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 5px;
+      min-width: 500px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .badge-pago {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .stock-bajo {
+      background-color: #fef2f2;
+      color: #dc2626;
+      font-weight: bold;
+    }
+
+    .resumen-caja {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .item-caja {
+      font-size: 12px;
+      font-weight: bold;
+      color: #065f46;
+      background: #ffffff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      flex: 1 1 calc(33% - 8px);
+      text-align: center;
+    }
+
+    .item-caja.gasto { color: #991b1b; }
+    .item-caja.neto { color: #0f172a; border-color: #0f172a; }
+
+    #reader {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    /* Modal / UI de Asistente IA */
+    .ai-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    @media print {
+      body { background-color: #fff; padding: 0; }
+      .container { display: none !important; }
+      #ticket-impresion {
+        display: block !important;
+        position: absolute;
+        top: 0; left: 0;
+        width: 80mm;
+        padding: 5px;
+        font-family: monospace;
+        font-size: 14px;
+        color: #000;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Z-TECH S&S</h1>
+    <div class="sub-title">Sistemas, Electrodomésticos & Repuestos</div>
+  </header>
+
+  <div class="grid-forms">
+    <!-- REGISTRAR ÍTEM / INVENTARIO -->
+    <div class="card">
+      <h3>Registrar Ítem / Entrada</h3>
+      <div class="form-group">
+        <input type="text" id="codigo" placeholder="Código / Código Barras">
+        <select id="categoria">
+          <option value="Tecnología">Tecnología / Audio</option>
+          <option value="Repuesto">Repuesto Moto / Electro</option>
+          <option value="Herramientas">Herramientas</option>
+          <option value="Accesorio">Accesorio / Celulares</option>
+          <option value="Servicio">Servicio Técnico</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <input type="text" id="nombre" list="lista-productos-existentes" placeholder="Nombre de producto" oninput="alSeleccionarProducto(this.value)" autocomplete="off">
+        <datalist id="lista-productos-existentes"></datalist>
+      </div>    
+      <div class="form-group">
+        <input type="number" id="precio" placeholder="Precio ($)">
+        <input type="number" id="stock" placeholder="Stock" value="10">
+      </div>
+      <button class="btn btn-save" id="btn-guardar">Guardar Ítem</button>
+    </div>
+
+    <!-- REGISTRAR VENTA (POS) -->
+    <div class="card">
+      <h3>
+        Registrar Venta 
+        <button class="btn-action btn-secondary" onclick="alternarCamara()">📷 Escanear Barcode</button>
+      </h3>
+      <div id="reader"></div>
+      <div class="form-group full">
+        <input type="text" id="input-buscar-producto" list="lista-productos-busqueda" placeholder="🔍 Buscar por código o nombre..." onkeydown="detectarLectorBarras(event)">
+        <datalist id="lista-productos-busqueda"></datalist>
+      </div>
+      <div class="form-group">
+        <input type="number" id="cantidad-venta" placeholder="Cantidad" min="1" value="1">
+        <select id="medio-pago">
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Nequi">📱 Nequi</option>
+          <option value="Daviplata">📱 Daviplata</option>
+          <option value="Bancolombia A la Mano">📱 Bancolombia A la Mano</option>
+          <option value="Transferencia">🏦 Transferencia</option>
+        </select>
+      </div>
+      <button class="btn btn-sale" id="btn-vender">Realizar Venta</button>
+    </div>
+
+    <!-- CAJA CHICA & GASTOS -->
+    <div class="card">
+      <h3>Registrar Egreso / Gasto</h3>
+      <div class="form-group full">
+        <input type="text" id="gasto-concepto" placeholder="Concepto (Ej: Almuerzo, Flete, Luz)">
+      </div>
+      <div class="form-group">
+        <input type="number" id="gasto-monto" placeholder="Monto ($)">
+        <select id="gasto-medio">
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Nequi">📱 Nequi</option>
+          <option value="Daviplata">📱 Daviplata</option>
+        </select>
+      </div>
+      <button class="btn btn-danger" id="btn-gasto">Registrar Gasto</button>
+    </div>
+  </div>
+
+  <!-- CIERRE DE CAJA Y VENTAS -->
+  <div class="card">
+    <h3>Cierre de Caja y Balance Diario</h3>
+    <div class="resumen-caja" id="resumen-metodos">
+      <div class="item-caja">Cargando balance...</div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Producto</th>
+            <th>Cant.</th>
+            <th>Pago</th>
+            <th>Total</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-ventas">
+          <tr><td colspan="6">Cargando ventas...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ASISTENTE COMERCIAL E INTELIGENCIA DE NEGOCIO -->
+  <div class="card">
+    <h3>🤖 Asistente Z-Tech (IA & Soporte Comercial)</h3>
+    <div class="form-group full">
+      <input type="text" id="ia-prompt" placeholder="Ej: Redactar mensaje para cotizar repuesto o consultar compatibilidad...">
+    </div>
+    <button class="btn btn-save" style="background:#0284c7;" onclick="procesarAsistenteIA()">Consultar / Redactar</button>
+    <div id="ia-respuesta" class="ai-box" style="display:none;"></div>
+  </div>
+
+  <!-- INVENTARIO COMPLETO -->
+  <div class="card">
+    <h3>Inventario de Productos</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Categoría</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-productos">
+          <tr><td colspan="6">Cargando inventario...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HISTORIAL DE GASTOS -->
+  <div class="card">
+    <h3>Historial de Egresos</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Concepto</th>
+            <th>Medio</th>
+            <th>Monto</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-gastos">
+          <tr><td colspan="4">Cargando gastos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DIRECTORIO PROVEEDORES -->
+  <div class="card">
+    <h3>Directorio de Proveedores</h3>
+    <div class="form-group">
+      <input type="text" id="prov-nombre" placeholder="Nombre Proveedor">
+      <input type="text" id="prov-tel" placeholder="WhatsApp / Tel">
+    </div>
+    <div class="form-group">
+      <input type="text" id="prov-cat" placeholder="Línea de Suministro">
+      <button class="btn btn-save" id="btn-prov">Guardar</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Contacto</th>
+            <th>Línea</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-proveedores">
+          <tr><td colspan="3">Cargando proveedores...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TICKET IMPRESIÓN FÍSICA -->
+<div id="ticket-impresion" style="display:none;"></div>
+
+<script>
+  const SUPABASE_ANON_KEY = "sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IiET40ZD";
+  const SUPABASE_URL = "https://ntrmofcldtiewurqijrp.supabase.co";
+
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  let productosLocales = [];
+  let html5QrcodeScanner = null;
+
+  // --- CARGA Y SINCRONIZACIÓN ---
+  async function cargarproductos() {
+    const tbody = document.getElementById('tabla-productos');
+    const datalist = document.getElementById('lista-productos-busqueda');
+    const datalistExistentes = document.getElementById('lista-productos-existentes');
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/PRODUCTOS?select=*', { headers });
+      if (!res.ok) throw new Error();
+      productosLocales = await res.json() || [];
+
+      tbody.innerHTML = '';
+      datalist.innerHTML = '';
+      datalistExistentes.innerHTML = '';
+
+      if (productosLocales.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Sin ítems en inventario.</td></tr>';
+        return;
+      }
+
+      productosLocales.forEach(prod => {
+        const esBajo = prod.STOCK <= 3;
+        const tr = document.createElement('tr');
+        if (esBajo) tr.classList.add('stock-bajo');
+
+        tr.innerHTML = `
+          <td>${prod.CODIGO || '-'}</td>
+          <td>${prod.CATEGORIA || 'General'}</td>
+          <td>${prod.NOMBRE}</td>
+          <td>$${prod.PRECIO}</td>
+          <td>${prod.STOCK} ${esBajo ? '⚠️' : ''}</td>
+          <td><button class="btn-action btn-delete" onclick="eliminarproducto('${prod.id || prod.CODIGO}')">Eliminar</button></td>
+        `;
+        tbody.appendChild(tr);
+
+        // Opciones de sugerencia de búsqueda
+        const opt = document.createElement('option');
+        opt.value = prod.NOMBRE;
+        opt.textContent = `${prod.CODIGO ? '[' + prod.CODIGO + '] ' : ''}Stock: ${prod.STOCK} - $${prod.PRECIO}`;
+        datalist.appendChild(opt);
+
+        const optE = document.createElement('option');
+        optE.value = prod.NOMBRE;
+        datalistExistentes.appendChild(optE);
+      });
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="6">Error de conexión al cargar inventario.</td></tr>';
+    }
+  }
+
+  async function cargarVentasYGastos() {
+    const tbodyVentas = document.getElementById('tabla-ventas');
+    const tbodyGastos = document.getElementById('tabla-gastos');
+    const resumenElem = document.getElementById('resumen-metodos');
+
+    let totalGastos = 0;
+
+    // Cargar Gastos
+    try {
+      const resG = await fetch(SUPABASE_URL + '/rest/v1/GASTOS?select=*&order=created_at.desc', { headers });
+      if (resG.ok) {
+        const gastos = await resG.json();
+        tbodyGastos.innerHTML = '';
+        if (gastos.length > 0) {
+          gastos.forEach(g => {
+            const monto = parseFloat(g.MONTO || 0);
+            totalGastos += monto;
+            const fecha = g.created_at ? new Date(g.created_at).toLocaleString('es-CO') : '-';
+            tbodyGastos.innerHTML += `<tr><td>${fecha}</td><td>${g.CONCEPTO}</td><td><span class="badge-pago" style="background:#fee2e2;color:#991b1b">${g.MEDIO_PAGO || 'Efectivo'}</span></td><td>$${monto}</td></tr>`;
+          });
+        } else {
+          tbodyGastos.innerHTML = '<tr><td colspan="4">Sin egresos.</td></tr>';
+        }
+      }
+    } catch (e) { tbodyGastos.innerHTML = '<tr><td colspan="4">Error de datos.</td></tr>'; }
+
+    // Cargar Ventas
+    try {
+      const resV = await fetch(SUPABASE_URL + '/rest/v1/VENTAS?select=*&order=created_at.desc', { headers });
+      if (!resV.ok) throw new Error();
+      const ventas = await resV.json();
+
+      tbodyVentas.innerHTML = '';
+      let totales = { Efectivo: 0, Nequi: 0, Daviplata: 0, 'Bancolombia A la Mano': 0, Transferencia: 0, General: 0 };
+
+      if (ventas.length === 0) {
+        tbodyVentas.innerHTML = '<tr><td colspan="6">Sin ventas hoy.</td></tr>';
+        resumenElem.innerHTML = '<div class="item-caja">Total Vendido: $0</div>';
+        return;
+      }
+
+      ventas.forEach(v => {
+        const monto = parseFloat(v.TOTAL || 0);
+        const medio = v.MEDIO_PAGO || 'Efectivo';
+        totales.General += monto;
+        if (totales[medio] !== undefined) totales[medio] += monto;
+
+        const fecha = v.created_at ? new Date(v.created_at).toLocaleString('es-CO') : '-';
+        tbodyVentas.innerHTML += `
+          <tr>
+            <td>${fecha}</td>
+            <td>${v.PRODUCTO}</td>
+            <td>${v.CANTIDAD}</td>
+            <td><span class="badge-pago">${medio}</span></td>
+            <td>$${monto}</td>
+            <td>
+              <button class="btn-action btn-print" onclick="imprimirFactura('${v.PRODUCTO}',${v.CANTIDAD},${monto},'${medio}','${fecha}')">🖨️</button>
+              <button class="btn-action btn-wsp" onclick="enviarWhatsApp('${v.PRODUCTO}',${v.CANTIDAD},${monto},'${medio}')">💬</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      const cajaNeta = totales.General - totalGastos;
+      resumenElem.innerHTML = `
+        <div class="item-caja">💵 Efectivo: $${totales.Efectivo}</div>
+        <div class="item-caja">📱 Nequi: $${totales.Nequi}</div>
+        <div class="item-caja">📱 Daviplata: $${totales.Daviplata}</div>
+        <div class="item-caja">📱 A la Mano: $${totales['Bancolombia A la Mano']}</div>
+        <div class="item-caja">🏦 Transferencia: $${totales.Transferencia}</div>
+        <div class="item-caja gasto">💸 Gastos: $${totalGastos}</div>
+        <div class="item-caja neto">NETO CAJA: $${cajaNeta}</div>
+      `;
+    } catch (e) { tbodyVentas.innerHTML = '<tr><td colspan="6">Error de datos.</td></tr>'; }
+  }
+
+  // --- ESCÁNER CÓDIGO DE BARRAS ---
+  function alternarCamara() {
+    const readerDiv = document.getElementById('reader');
+    if (readerDiv.style.display === 'none' || !readerDiv.style.display) {
+      readerDiv.style.display = 'block';
+      html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+      html5QrcodeScanner.render((decodedText) => {
+        document.getElementById('input-buscar-producto').value = decodedText;
+        html5QrcodeScanner.clear();
+        readerDiv.style.display = 'none';
+        registrarVenta();
+      });
+    } else {
+      html5QrcodeScanner.clear();
+      readerDiv.style.display = 'none';
+    }
+  }
+
+  function detectarLectorBarras(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      registrarVenta();
+    }
+  }
+
+  // --- TRANSACCIONES POS ---
+  async function registrarVenta() {
+    const textoBuscado = document.getElementById('input-buscar-producto').value.trim();
+    const cantidadVender = parseInt(document.getElementById('cantidad-venta').value) || 1;
+    const medioPago = document.getElementById('medio-pago').value;
+
+    if (!textoBuscado) return alert('Selecciona un producto.');
+
+    const producto = productosLocales.find(p => 
+      (p.NOMBRE && p.NOMBRE.toLowerCase() === textoBuscado.toLowerCase()) || 
+      (p.CODIGO && p.CODIGO.toLowerCase() === textoBuscado.toLowerCase())
+    );
+
+    if (!producto) return alert('Ítem no encontrado en inventario.');
+    if (producto.STOCK < cantidadVender) return alert(`Stock insuficiente. Solo quedan ${producto.STOCK}.`);
+
+    const nuevoStock = producto.STOCK - cantidadVender;
+    const totalVenta = producto.PRECIO * cantidadVender;
+    const campoFiltro = producto.id ? ('id=eq.' + producto.id) : ('CODIGO=eq.' + producto.CODIGO);
+
+    const res = await fetch(SUPABASE_URL + '/rest/v1/PRODUCTOS?' + campoFiltro, {
+      method: 'PATCH',
+      headers: headers,
+      body: JSON.stringify({ STOCK: nuevoStock })
+    });
+
+    if (res.ok) {
+      await fetch(SUPABASE_URL + '/rest/v1/VENTAS', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify([{ PRODUCTO: producto.NOMBRE, CANTIDAD: cantidadVender, TOTAL: totalVenta, MEDIO_PAGO: medioPago }])
+      });
+
+      alert('¡Venta realizada!');
+      document.getElementById('input-buscar-producto').value = '';
+      document.getElementById('cantidad-venta').value = '1';
+      cargarproductos();
+      cargarVentasYGastos();
+    } else {
+      alert('Error al actualizar el stock.');
+    }
+  }
+
+  async function guardarproducto() {
+    const codigo = document.getElementById('codigo').value.trim();
+    const categoria = document.getElementById('categoria').value;
+    const nombre = document.getElementById('nombre').value.trim();
+    const precio = parseFloat(document.getElementById('precio').value);
+    const stock = parseInt(document.getElementById('stock').value);
+
+    if (!nombre || isNaN(precio) || isNaN(stock)) return alert('Ingresa Nombre, Precio y Stock.');
+
+    const productoExistente = productosLocales.find(p => p.NOMBRE.trim().toUpperCase() === nombre.toUpperCase());
+
+    if (productoExistente) {
+      // Sumar stock
+      const nuevoStock = productoExistente.STOCK + stock;
+      await fetch(SUPABASE_URL + '/rest/v1/PRODUCTOS?id=eq.' + productoExistente.id, {
+        method: 'PATCH',
+        headers: headers,
+        body: JSON.stringify({ STOCK: nuevoStock, PRECIO: precio, CATEGORIA: categoria, CODIGO: codigo })
+      });
+      alert('Stock actualizado.');
+    } else {
+      // Crear ítem nuevo
+      await fetch(SUPABASE_URL + '/rest/v1/PRODUCTOS', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify([{ NOMBRE: nombre, PRECIO: precio, STOCK: stock, CODIGO: codigo, CATEGORIA: categoria }])
+      });
+      alert('¡Ítem creado con éxito!');
+    }
+
+    document.getElementById('codigo').value = '';
+    document.getElementById('nombre').value = '';
+    document.getElementById('precio').value = '';
+    document.getElementById('stock').value = '10';
+    alSeleccionarProducto('');
+    cargarproductos();
+  }
+
+  async function guardarGasto() {
+    const concepto = document.getElementById('gasto-concepto').value.trim();
+    const monto = parseFloat(document.getElementById('gasto-monto').value);
+    const medio = document.getElementById('gasto-medio').value;
+
+    if (!concepto || isNaN(monto)) return alert('Ingresa concepto y monto.');
+
+    const res = await fetch(SUPABASE_URL + '/rest/v1/GASTOS', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify([{ CONCEPTO: concepto, MONTO: monto, MEDIO_PAGO: medio }])
+    });
+
+    if (res.ok) {
+      alert('Gasto registrado.');
+      document.getElementById('gasto-concepto').value = '';
+      document.getElementById('gasto-monto').value = '';
+      cargarVentasYGastos();
+    }
+  }
+
+  async function eliminarproducto(id) {
+    if (!confirm('¿Deseas eliminar este registro?')) return;
+    await fetch(SUPABASE_URL + '/rest/v1/PRODUCTOS?id=eq.' + id, { method: 'DELETE', headers });
+    cargarproductos();
+  }
+
+  function alSeleccionarProducto(valor) {
+    const p = productosLocales.find(item => item.NOMBRE && item.NOMBRE.trim().toUpperCase() === valor.trim().toUpperCase());
+    const btn = document.getElementById('btn-guardar');
+    if (p) {
+      document.getElementById('codigo').value = p.CODIGO || '';
+      document.getElementById('categoria').value = p.CATEGORIA || 'General';
+      document.getElementById('precio').value = p.PRECIO || 0;
+      btn.textContent = `➕ Sumar a Stock (Actual: ${p.STOCK})`;
+      btn.style.backgroundColor = '#10b981';
+    } else {
+      btn.textContent = 'Guardar Ítem';
+      btn.style.backgroundColor = '';
+    }
+  }
+
+  // --- FACTURACIÓN Y COMPROBANTES ---
+  function imprimirFactura(producto, cant, total, medio, fecha) {
+    const ticket = document.getElementById('ticket-impresion');
+    ticket.style.display = 'block';
+    ticket.innerHTML = `
+      ==============================<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Z-TECH S&S</b><br>
+      ==============================<br>
+      <b>Fecha:</b> ${fecha}<br>
+      ------------------------------<br>
+      <b>Producto:</b> ${producto}<br>
+      <b>Cantidad:</b> ${cant}<br>
+      <b>Pago:</b> ${medio}<br>
+      ------------------------------<br>
+      <b>TOTAL:</b> $${total}<br>
+      ==============================<br>
+      &nbsp;&nbsp;¡Gracias por su compra!<br>
+      ==============================
+    `;
+    window.print();
+    ticket.style.display = 'none';
+  }
+
+  function enviarWhatsApp(producto, cant, total, medio) {
+    const texto = `*COMPROBANTE DE COMPRA - Z-TECH S&S*%0A` +
+                  `----------------------------------%0A` +
+                  `*Producto:* ${producto}%0A` +
+                  `*Cantidad:* ${cant}%0A` +
+                  `*Medio de Pago:* ${medio}%0A` +
+                  `*Total Pagado:* $${total}%0A` +
+                  `----------------------------------%0A` +
+                  `¡Gracias por tu preferencia!`;
+    window.open(`https://api.whatsapp.com/send?text=${texto}`, '_blank');
+  }
+
+  // --- ASISTENTE IA INTEGRADO ---
+  function procesarAsistenteIA() {
+    const prompt = document.getElementById('ia-prompt').value.trim();
+    const box = document.getElementById('ia-respuesta');
+    if (!prompt) return alert('Escribe tu consulta para la IA.');
+
+    box.style.display = 'block';
+    box.innerHTML = '<i>Generando respuesta...</i>';
+
+    setTimeout(() => {
+      box.innerHTML = `<b>Sugerencia Z-Tech IA:</b><br>
+      Asegúrate de revisar las especificaciones técnicas del repuesto o accesorio antes de la instalación. Si es un mensaje para cliente: 
+      "<i>Hola! En Z-Tech S&S tenemos disponible ${prompt}. ¡Escríbenos para concretar tu pedido o visita nuestro local!</i>"`;
+    }, 800);
+  }
+
+  // --- PROVEEDORES ---
+  async function guardarProveedor() {
+    const nombre = document.getElementById('prov-nombre').value.trim();
+    const tel = document.getElementById('prov-tel').value.trim();
+    const cat = document.getElementById('prov-cat').value.trim();
+
+    if (!nombre) return alert('Ingresa nombre del proveedor.');
+
+    await fetch(SUPABASE_URL + '/rest/v1/PROVEEDORES', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify([{ NOMBRE: nombre, TELEFONO: tel, CATEGORIA: cat }])
+    });
+    alert('Proveedor guardado.');
+    document.getElementById('prov-nombre').value = '';
+    document.getElementById('prov-tel').value = '';
+    document.getElementById('prov-cat').value = '';
+    cargarProveedores();
+  }
+
+  async function cargarProveedores() {
+    const tbody = document.getElementById('tabla-proveedores');
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/PROVEEDORES?select=*', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3">Sin proveedores.</td></tr>';
+          return;
+        }
+        data.forEach(p => {
+          tbody.innerHTML += `<tr><td>${p.NOMBRE}</td><td>${p.TELEFONO || '-'}</td><td>${p.CATEGORIA || '-'}</td></tr>`;
+        });
+      }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="3">Sin conexión.</td></tr>'; }
+  }
+
+  // --- EVENT LISTENERS ---
+  document.getElementById('btn-guardar').addEventListener('click', guardarproducto);
+  document.getElementById('btn-vender').addEventListener('click', registrarVenta);
+  document.getElementById('btn-gasto').addEventListener('click', guardarGasto);
+  document.getElementById('btn-prov').addEventListener('click', guardarProveedor);
+
+  window.onload = function() {
+    cargarproductos();
+    cargarVentasYGastos();
+    cargarProveedores();
+  };
+</script>
+
+</body>
+</html>
