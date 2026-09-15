@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z-TECH S&S - POS & Inventario</title>
+  <!-- LIBRERÍA DE SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --primary: #2563eb;
@@ -24,7 +26,7 @@
     body {
       background-color: #f1f5f9;
       color: var(--dark);
-      padding-bottom: 70px; /* Espacio para la barra inferior */
+      padding-bottom: 75px; /* Espacio para la barra inferior */
     }
 
     /* PANTALLA DE LOGIN */
@@ -87,7 +89,7 @@
       border: none;
       background: none;
       cursor: pointer;
-      width: 20%;
+      width: 25%;
     }
 
     .nav-item.active {
@@ -224,8 +226,7 @@
     }
 
     th { background: #f8fafc; }
-    
-    .text-right { text-align: right; }
+
     .badge-pago {
       background: #dbeafe;
       color: #1e40af;
@@ -273,10 +274,13 @@
         <h3>🛒 Registrar Venta</h3>
         <form onsubmit="registrarVenta(event)">
           <div class="form-group">
-            <input type="text" id="v-buscar" placeholder="🔍 Buscar por código o nombre..." required>
+            <input type="text" id="v-buscar" placeholder="🔍 Nombre o código del producto..." required>
           </div>
           <div class="form-row form-group">
+            <input type="number" id="v-precio" placeholder="Precio ($)" required>
             <input type="number" id="v-cant" value="1" min="1" placeholder="Cant." required>
+          </div>
+          <div class="form-group">
             <select id="v-metodo">
               <option value="Efectivo">💵 Efectivo</option>
               <option value="Nequi">📱 Nequi</option>
@@ -294,14 +298,14 @@
         <table>
           <thead>
             <tr>
-              <th>Cant.</th>
+              <th>Producto</th>
               <th>Pago</th>
               <th>Total</th>
-              <th>Vendedor</th>
+              <th>Usuario</th>
             </tr>
           </thead>
           <tbody id="lista-ventas">
-            <!-- Dinámico -->
+            <!-- Cargado dinámicamente -->
           </tbody>
         </table>
       </div>
@@ -311,7 +315,7 @@
     <div id="tab-inventario" class="tab-content">
       <div class="card admin-only">
         <h3>📦 Registrar Ítem / Entrada</h3>
-        <form onsubmit="guardarItem(event)">
+        <form onsubmit="guardarItemSupabase(event)">
           <div class="form-row form-group">
             <input type="text" id="inv-codigo" placeholder="Código / Barcode">
             <select id="inv-cat">
@@ -321,12 +325,12 @@
             </select>
           </div>
           <div class="form-group">
-            <input type="text" id="inv-nombre" placeholder="Nombre de producto" required>
+            <input type="text" id="inv-nombre" placeholder="Nombre del producto" required>
           </div>
           <div class="form-group">
             <input type="number" id="inv-precio" placeholder="Precio ($)" required>
           </div>
-          <button type="submit" class="btn-success">Guardar Ítem</button>
+          <button type="submit" class="btn-success">Guardar en Supabase</button>
         </form>
       </div>
 
@@ -341,13 +345,13 @@
             </tr>
           </thead>
           <tbody id="lista-inventario">
-            <!-- Dinámico -->
+            <!-- Cargado desde Supabase -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- PESTAÑA 3: CAJA Y GASTOS (Solo Admin) -->
+    <!-- PESTAÑA 3: CAJA Y GASTOS -->
     <div id="tab-caja" class="tab-content">
       <div class="card">
         <h3>💰 Cierre de Caja y Balance Diario</h3>
@@ -380,7 +384,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA 4: PROVEEDORES & IA -->
+    <!-- PESTAÑA 4: EXTRAS & IA -->
     <div id="tab-mas" class="tab-content">
       <div class="card">
         <h3>🤖 Asistente Z-Tech IA</h3>
@@ -388,19 +392,6 @@
           <input type="text" placeholder="Ej: Redactar mensaje para cotizar repuesto...">
         </div>
         <button style="background:#0284c7;">Consultar / Redactar</button>
-      </div>
-
-      <div class="card admin-only">
-        <h3>📖 Directorio de Proveedores</h3>
-        <form onsubmit="guardarProveedor(event)">
-          <div class="form-group">
-            <input type="text" id="p-nombre" placeholder="Nombre Proveedor" required>
-          </div>
-          <div class="form-group">
-            <input type="text" id="p-tel" placeholder="WhatsApp / Teléfono" required>
-          </div>
-          <button type="submit" class="btn-success">Guardar Proveedor</button>
-        </form>
       </div>
     </div>
 
@@ -427,23 +418,22 @@
   </nav>
 
   <script>
-    // CREDENCIALES DE USUARIOS
+    // CONFIGURACIÓN DE SUPABASE
+    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNTQ5ODUsImV4cCI6MjA1NTkzMDk4NX0.3iKUpS0gA25t9p-7Jyl7kCjO9K61fT4Q-E9p2WvX4jQ'; // Usamos la anon key de tu proyecto
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // USUARIOS DEL SISTEMA
     const USUARIOS = {
       'admin': { clave: 'admin123', rol: 'admin', nombre: 'Administrador' },
       'vendedor': { clave: '1234', rol: 'vendedor', nombre: 'Empleado' }
     };
 
     let usuarioActual = null;
-
-    // BASE DE DATOS LOCAL
     let ventas = JSON.parse(localStorage.getItem('zt_ventas')) || [];
-    let inventario = JSON.parse(localStorage.getItem('zt_inventario')) || [
-      { codigo: 'AC-MOT', cat: 'Repuesto', nombre: 'MOTUL 5100', precio: 50000 },
-      { codigo: 'ACEITE', cat: 'Repuesto', nombre: 'MOTUL 7100', precio: 75000 }
-    ];
     let gastos = JSON.parse(localStorage.getItem('zt_gastos')) || [];
 
-    // LOGIN
+    // INICIAR SESIÓN
     function iniciarSesion(e) {
       e.preventDefault();
       const u = document.getElementById('login-user').value.toLowerCase().trim();
@@ -453,8 +443,7 @@
         usuarioActual = USUARIOS[u];
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('current-user-badge').innerText = usuarioActual.nombre;
-        
-        // Ocultar módulos según el rol
+
         if (usuarioActual.rol !== 'admin') {
           document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
           document.querySelectorAll('.admin-nav').forEach(el => el.style.display = 'none');
@@ -463,7 +452,8 @@
           document.querySelectorAll('.admin-nav').forEach(el => el.style.display = 'flex');
         }
 
-        renderAll();
+        cargarInventarioSupabase();
+        renderVentasYCaja();
       } else {
         alert('Usuario o contraseña incorrectos.');
       }
@@ -473,32 +463,85 @@
       location.reload();
     }
 
-    // NAVEGACIÓN POR PESTAÑAS
+    // CAMBIAR PESTAÑAS
     function cambiarTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      
       document.getElementById(tabId).classList.add('active');
       btn.classList.add('active');
+    }
+
+    // SUPABASE: CARGAR INVENTARIO
+    async function cargarInventarioSupabase() {
+      const tbody = document.getElementById('lista-inventario');
+      tbody.innerHTML = '<tr><td colspan="3">Cargando desde Supabase...</td></tr>';
+
+      const { data, error } = await db.from('inventario').select('*');
+
+      if (error) {
+        console.error(error);
+        tbody.innerHTML = '<tr><td colspan="3" style="color:red;">Error al conectar con la base de datos</td></tr>';
+        return;
+      }
+
+      if (data && data.length > 0) {
+        tbody.innerHTML = data.map(item => `
+          <tr>
+            <td>${item.codigo || '-'}</td>
+            <td>${item.nombre}</td>
+            <td>$${item.precio.toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="3">No hay productos guardados en Supabase.</td></tr>';
+      }
+    }
+
+    // SUPABASE: GUARDAR NUEVO PRODUCTO
+    async function guardarItemSupabase(e) {
+      e.preventDefault();
+      const codigo = document.getElementById('inv-codigo').value;
+      const cat = document.getElementById('inv-cat').value;
+      const nombre = document.getElementById('inv-nombre').value;
+      const precio = parseFloat(document.getElementById('inv-precio').value);
+
+      const { data, error } = await db.from('inventario').insert([
+        { codigo, cat, nombre, precio }
+      ]);
+
+      if (error) {
+        alert('Error al guardar en Supabase: ' + error.message);
+      } else {
+        alert('¡Producto guardado exitosamente!');
+        document.getElementById('inv-codigo').value = '';
+        document.getElementById('inv-nombre').value = '';
+        document.getElementById('inv-precio').value = '';
+        cargarInventarioSupabase();
+      }
     }
 
     // REGISTRAR VENTA
     function registrarVenta(e) {
       e.preventDefault();
-      const prod = document.getElementById('v-buscar').value;
-      const cant = parseInt(document.getElementById('v-cant').value);
+      const producto = document.getElementById('v-buscar').value;
+      const precio = parseFloat(document.getElementById('v-precio').value) || 0;
+      const cant = parseInt(document.getElementById('v-cant').value) || 1;
       const metodo = document.getElementById('v-metodo').value;
 
+      const total = precio * cant;
+
       ventas.push({
+        producto,
         cant,
         metodo,
-        total: cant * 10000, // Demostración de monto
+        total,
         vendedor: usuarioActual.nombre
       });
 
       localStorage.setItem('zt_ventas', JSON.stringify(ventas));
       document.getElementById('v-buscar').value = '';
-      renderAll();
+      document.getElementById('v-precio').value = '';
+      renderVentasYCaja();
     }
 
     // REGISTRAR GASTO
@@ -511,33 +554,21 @@
       localStorage.setItem('zt_gastos', JSON.stringify(gastos));
       document.getElementById('g-concepto').value = '';
       document.getElementById('g-monto').value = '';
-      renderAll();
+      renderVentasYCaja();
     }
 
-    // RENDERIZAR DATOS EN PANTALLA
-    function renderAll() {
-      // Render Ventas
+    // RENDERIZAR VENTAS Y BALANCE DE CAJA
+    function renderVentasYCaja() {
       const tbodyV = document.getElementById('lista-ventas');
       tbodyV.innerHTML = ventas.map(v => `
         <tr>
-          <td>${v.cant}</td>
+          <td>${v.producto} (${v.cant})</td>
           <td><span class="badge-pago">${v.metodo}</span></td>
-          <td>$${v.total}</td>
+          <td>$${v.total.toLocaleString()}</td>
           <td>${v.vendedor}</td>
         </tr>
       `).join('');
 
-      // Render Inventario
-      const tbodyI = document.getElementById('lista-inventario');
-      tbodyI.innerHTML = inventario.map(i => `
-        <tr>
-          <td>${i.codigo || '-'}</td>
-          <td>${i.nombre}</td>
-          <td>$${i.precio}</td>
-        </tr>
-      `).join('');
-
-      // Cálculos Cierre de Caja
       let ef = 0, nq = 0, dv = 0, am = 0, tr = 0, totGastos = 0;
 
       ventas.forEach(v => {
@@ -550,15 +581,15 @@
 
       gastos.forEach(g => totGastos += g.monto);
 
-      document.getElementById('c-efectivo').innerText = `$${ef}`;
-      document.getElementById('c-nequi').innerText = `$${nq}`;
-      document.getElementById('c-daviplata').innerText = `$${dv}`;
-      document.getElementById('c-alamano').innerText = `$${am}`;
-      document.getElementById('c-transf').innerText = `$${tr}`;
-      document.getElementById('c-gastos').innerText = `$${totGastos}`;
+      document.getElementById('c-efectivo').innerText = `$${ef.toLocaleString()}`;
+      document.getElementById('c-nequi').innerText = `$${nq.toLocaleString()}`;
+      document.getElementById('c-daviplata').innerText = `$${dv.toLocaleString()}`;
+      document.getElementById('c-alamano').innerText = `$${am.toLocaleString()}`;
+      document.getElementById('c-transf').innerText = `$${tr.toLocaleString()}`;
+      document.getElementById('c-gastos').innerText = `$${totGastos.toLocaleString()}`;
 
       const neto = (ef + nq + dv + am + tr) - totGastos;
-      document.getElementById('c-neto').innerText = `$${neto}`;
+      document.getElementById('c-neto').innerText = `$${neto.toLocaleString()}`;
     }
   </script>
 </body>
