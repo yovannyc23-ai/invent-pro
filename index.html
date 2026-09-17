@@ -248,18 +248,16 @@
       'vendedor': { clave: '1234', rol: 'vendedor', nombre: 'Empleado Vendedor' }
     };
     let usuarioActual = null;
-
-    // CREDENCIALES SUPABASE
-    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NzIxOTQsImV4cCI6MjA4NzA0ODE5NH0.Z5-U_1-oV8iJ_8N3O6z2F9H8P1d7W3X1';
-    
+// CREDENCIALES SUPABASE
+const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
+    const SUPABASE_KEY = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NzIxOTQsImV4cCI6MjA4NzA0ODE5NH0.Z5-U_1-oV8iJ_8N3O6z2F9H8P1d7W3X1`;
     const headers = {
       'apikey': SUPABASE_KEY,
       'Authorization': 'Bearer ' + SUPABASE_KEY,
       'Content-Type': 'application/json'
     };
-
-    let productosCargados = [];
+    
+       let productosCargados = [];
 
     // MANEJO DE SESIÓN
     document.getElementById('form-login').addEventListener('submit', function(e) {
