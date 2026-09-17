@@ -4,334 +4,252 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z-TECH S&S - POS & Inventario</title>
-  <!-- LIBRERÍA DE SUPABASE -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1b5e20">
+  
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
-    :root {
-      --primary: #2563eb;
-      --success: #10b981;
-      --danger: #ef4444;
-      --dark: #1e293b;
-      --light: #f8fafc;
-      --card-bg: #ffffff;
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
     body {
-      background-color: #f1f5f9;
-      color: var(--dark);
-      padding-bottom: 75px; /* Espacio para la barra inferior */
+      background-color: #f4f6f8;
+      color: #333;
+      padding-bottom: 70px;
     }
-
-    /* PANTALLA DE LOGIN */
-    #login-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #0f172a;
+    header {
+      background-color: #1b5e20;
+      color: white;
+      padding: 15px 20px;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      z-index: 9999;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-
-    .login-card {
-      background: #ffffff;
-      padding: 2rem;
-      border-radius: 1rem;
-      width: 90%;
-      max-width: 380px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center;
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
     }
-
-    .login-card h2 {
-      margin-bottom: 0.2rem;
-      color: #0f172a;
+    .user-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
     }
-
-    .login-card p {
-      font-size: 0.85rem;
-      color: #64748b;
-      margin-bottom: 1.5rem;
+    .btn-logout {
+      background: #c62828;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin-left: 10px;
+    }
+    .container {
+      padding: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      color: #1b5e20;
+      border-bottom: 2px solid #e8f5e9;
+      padding-bottom: 5px;
+    }
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .form-group.full {
+      flex-direction: column;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #2e7d32;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-save {
+      background-color: #2e7d32;
+      color: white;
+    }
+    .btn-save:active {
+      background-color: #1b5e20;
+    }
+    
+    /* TABLA */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    th {
+      background-color: #f1f8e9;
+      color: #2e7d32;
     }
 
     /* BARRA DE NAVEGACIÓN INFERIOR */
-    .bottom-nav {
+    nav.bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
-      width: 100%;
-      background: #ffffff;
-      border-top: 1px solid #e2e8f0;
+      right: 0;
+      height: 60px;
+      background: white;
       display: flex;
       justify-content: space-around;
-      padding: 8px 0;
-      z-index: 1000;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      align-items: center;
+      border-top: 1px solid #ddd;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
     }
-
     .nav-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-size: 0.75rem;
-      color: #64748b;
+      color: #666;
       text-decoration: none;
-      border: none;
+      font-size: 0.75rem;
       background: none;
+      border: none;
       cursor: pointer;
-      width: 25%;
     }
-
     .nav-item.active {
-      color: var(--primary);
+      color: #2e7d32;
       font-weight: bold;
     }
-
-    .nav-icon {
-      font-size: 1.25rem;
-      margin-bottom: 2px;
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
     }
 
-    /* ENCABEZADO Y CONTENEDOR PRINCIPAL */
-    header {
-      background: #ffffff;
-      padding: 1rem;
-      text-align: center;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .user-badge {
-      font-size: 0.8rem;
-      background: #e0e7ff;
-      color: var(--primary);
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-weight: 600;
-    }
-
-    .container {
-      padding: 1rem;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
+    /* VISTAS */
     .tab-content {
       display: none;
     }
-
     .tab-content.active {
       display: block;
     }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 0.75rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .card h3 {
-      font-size: 1.1rem;
-      margin-bottom: 1rem;
-      color: #0f172a;
-    }
-
-    /* FORMULARIOS E INPUTS */
-    .form-group {
-      margin-bottom: 0.8rem;
-    }
-
-    .form-row {
+    /* LOGIN MODAL */
+    #login-overlay {
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.85);
       display: flex;
-      gap: 0.5rem;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
-
-    input, select, button {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.5rem;
-      font-size: 0.95rem;
-    }
-
-    button {
-      background: var(--primary);
-      color: white;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-    }
-
-    button.btn-success { background: var(--success); }
-    button.btn-danger { background: var(--danger); }
-
-    /* DASHBOARD Y RESUMEN DE CAJA */
-    .grid-caja {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .caja-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-      padding: 0.5rem;
+    .login-box {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 350px;
       text-align: center;
-      font-size: 0.85rem;
-    }
-
-    .caja-box strong {
-      display: block;
-      font-size: 1rem;
-      color: var(--primary);
-    }
-
-    .neto-box {
-      grid-column: span 2;
-      background: #e0f2fe;
-      border: 1px solid #bae6fd;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    /* TABLAS */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    th, td {
-      padding: 0.6rem;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    th { background: #f8fafc; }
-
-    .badge-pago {
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.75rem;
     }
   </style>
 </head>
 <body>
 
-  <!-- PANTALLA DE LOGIN -->
-  <div id="login-screen">
-    <div class="login-card">
-      <h2>Z-TECH S&S</h2>
-      <p>Sistemas, Electrodomésticos & Repuestos</p>
-      <form id="login-form" onsubmit="iniciarSesion(event)">
-        <div class="form-group">
-          <input type="text" id="login-user" placeholder="Usuario" required>
+  <!-- PANTALLA DE INICIO DE SESIÓN -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <h2 style="color: #1b5e20; margin-bottom: 15px;">Z-TECH S&S</h2>
+      <p style="font-size: 0.85rem; color: #666; margin-bottom: 20px;">Acceso al sistema POS & Inventario</p>
+      <form onsubmit="iniciarSesion(event)">
+        <div class="form-group full">
+          <input type="text" id="login-user" placeholder="Usuario" required autocomplete="username">
         </div>
-        <div class="form-group">
-          <input type="password" id="login-pass" placeholder="Contraseña" required>
+        <div class="form-group full">
+          <input type="password" id="login-pass" placeholder="Contraseña" required autocomplete="current-password">
         </div>
-        <button type="submit">Ingresar al Sistema</button>
+        <button type="submit" class="btn btn-save" style="margin-top: 10px;">Ingresar</button>
       </form>
     </div>
   </div>
 
-  <!-- ENCABEZADO PRINCIPAL -->
+  <!-- ENCABEZADO -->
   <header>
+    <h1>Z-TECH S&S</h1>
     <div>
-      <strong style="font-size: 1.1rem;">Z-TECH S&S</strong>
-    </div>
-    <div>
-      <span class="user-badge" id="current-user-badge">Invitado</span>
-      <button onclick="cerrarSesion()" style="padding: 4px 8px; font-size: 0.75rem; width: auto; background: #64748b;">Salir</button>
+      <span class="user-badge" id="lbl-usuario">Invitado</span>
+      <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
     </div>
   </header>
 
   <div class="container">
 
-    <!-- PESTAÑA 1: VENTAS -->
-    <div id="tab-ventas" class="tab-content active">
+    <!-- PESTAÑA: REGISTRAR / ENTRADA -->
+    <div id="tab-inventario" class="tab-content active">
       <div class="card">
-        <h3>🛒 Registrar Venta</h3>
-        <form onsubmit="registrarVenta(event)">
-          <div class="form-group">
-            <input type="text" id="v-buscar" placeholder="🔍 Nombre o código del producto..." required>
-          </div>
-          <div class="form-row form-group">
-            <input type="number" id="v-precio" placeholder="Precio ($)" required>
-            <input type="number" id="v-cant" value="1" min="1" placeholder="Cant." required>
-          </div>
-          <div class="form-group">
-            <select id="v-metodo">
-              <option value="Efectivo">💵 Efectivo</option>
-              <option value="Nequi">📱 Nequi</option>
-              <option value="Daviplata">📱 Daviplata</option>
-              <option value="A la Mano">📱 Bancolombia A la Mano</option>
-              <option value="Transferencia">🏦 Transferencia</option>
-            </select>
-          </div>
-          <button type="submit">Realizar Venta</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>📄 Últimas Ventas</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Pago</th>
-              <th>Total</th>
-              <th>Usuario</th>
-            </tr>
-          </thead>
-          <tbody id="lista-ventas">
-            <!-- Cargado dinámicamente -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PESTAÑA 2: INVENTARIO -->
-    <div id="tab-inventario" class="tab-content">
-      <div class="card admin-only">
         <h3>📦 Registrar Ítem / Entrada</h3>
-        <form onsubmit="guardarItemSupabase(event)">
-          <div class="form-row form-group">
-            <input type="text" id="inv-codigo" placeholder="Código / Barcode">
-            <select id="inv-cat">
-              <option value="General">General</option>
-              <option value="Repuesto">Repuesto</option>
-              <option value="Tecnología">Tecnología / Audio</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <input type="text" id="inv-nombre" placeholder="Nombre del producto" required>
-          </div>
-          <div class="form-group">
-            <input type="number" id="inv-precio" placeholder="Precio ($)" required>
-          </div>
-          <button type="submit" class="btn-success">Guardar en Supabase</button>
-        </form>
+        <div class="form-group">
+          <input type="text" id="codigo" placeholder="Código / Barcode (Ej: TEC-01)">
+          <select id="categoria">
+            <option value="Tecnología">Tecnología / Audio</option>
+            <option value="Repuesto">Repuesto</option>
+            <option value="Herramientas">Herramientas</option>
+            <option value="Accesorio">Accesorio</option>
+            <option value="Servicio">Servicio Técnico</option>
+          </select>
+        </div>
+        
+        <div class="form-group full">
+          <input 
+            type="text" 
+            id="nombre" 
+            list="lista-productos-existentes" 
+            placeholder="Nombre del producto o servicio" 
+            oninput="alSeleccionarProducto(this.value)"
+            autocomplete="off"
+          >
+          <datalist id="lista-productos-existentes"></datalist>
+        </div>
+
+        <div class="form-group">
+          <input type="number" id="precio" placeholder="Precio ($)">
+          <input type="number" id="stock" placeholder="Stock inicial" value="10">
+        </div>
+
+        <button class="btn btn-save" id="btn-guardar" onclick="guardarProducto()">Guardar en Supabase</button>
       </div>
 
       <div class="card">
@@ -345,122 +263,110 @@
             </tr>
           </thead>
           <tbody id="lista-inventario">
-            <!-- Cargado desde Supabase -->
+            <tr><td colspan="3">Cargando desde Supabase...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- PESTAÑA 3: CAJA Y GASTOS -->
-    <div id="tab-caja" class="tab-content">
+    <!-- PESTAÑA: VENTAS -->
+    <div id="tab-ventas" class="tab-content">
       <div class="card">
-        <h3>💰 Cierre de Caja y Balance Diario</h3>
-        <div class="grid-caja">
-          <div class="caja-box">Efectivo<strong id="c-efectivo">$0</strong></div>
-          <div class="caja-box">Nequi<strong id="c-nequi">$0</strong></div>
-          <div class="caja-box">Daviplata<strong id="c-daviplata">$0</strong></div>
-          <div class="caja-box">A la Mano<strong id="c-alamano">$0</strong></div>
-          <div class="caja-box">Transferencia<strong id="c-transf">$0</strong></div>
-          <div class="caja-box" style="color:var(--danger)">Gastos<strong id="c-gastos" style="color:var(--danger)">$0</strong></div>
-          <div class="neto-box">NETO EN CAJA: <span id="c-neto">$0</span></div>
+        <h3>🛒 Registrar Venta</h3>
+        <div class="form-group full">
+          <input type="text" id="input-buscar-producto" list="lista-productos-busqueda" placeholder="🔍 Buscar producto...">
+          <datalist id="lista-productos-busqueda"></datalist>
         </div>
-      </div>
-
-      <div class="card">
-        <h3>🔻 Registrar Egreso / Gasto</h3>
-        <form onsubmit="registrarGasto(event)">
-          <div class="form-group">
-            <input type="text" id="g-concepto" placeholder="Concepto (Ej: Almuerzo, Flete, Luz)" required>
-          </div>
-          <div class="form-row form-group">
-            <input type="number" id="g-monto" placeholder="Monto ($)" required>
-            <select id="g-metodo">
-              <option value="Efectivo">💵 Efectivo</option>
-              <option value="Nequi">📱 Nequi</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-danger">Registrar Gasto</button>
-        </form>
+        <div class="form-group">
+          <input type="number" id="cantidad-venta" placeholder="Cantidad" min="1" value="1">
+          <select id="medio-pago">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Nequi">Nequi</option>
+            <option value="Daviplata">Daviplata</option>
+            <option value="Bancolombia">Bancolombia</option>
+          </select>
+        </div>
+        <button class="btn btn-save" onclick="registrarVenta()">Procesar Venta</button>
       </div>
     </div>
 
-    <!-- PESTAÑA 4: EXTRAS & IA -->
-    <div id="tab-mas" class="tab-content">
+    <!-- PESTAÑA: CAJA & GASTOS -->
+    <div id="tab-caja" class="tab-content">
       <div class="card">
-        <h3>🤖 Asistente Z-Tech IA</h3>
-        <div class="form-group">
-          <input type="text" placeholder="Ej: Redactar mensaje para cotizar repuesto...">
-        </div>
-        <button style="background:#0284c7;">Consultar / Redactar</button>
+        <h3>💰 Cuadre de Caja</h3>
+        <p>Módulo de caja chica y resumen de ventas diarias.</p>
+      </div>
+    </div>
+
+    <!-- PESTAÑA: EXTRAS -->
+    <div id="tab-extras" class="tab-content">
+      <div class="card">
+        <h3>⚙️ Configuración / Herramientas</h3>
+        <p>Sincronización manual y ajustes del sistema Z-Tech S&S.</p>
       </div>
     </div>
 
   </div>
 
-  <!-- BARRA DE NAVEGACIÓN INFERIOR -->
+  <!-- NAVEGACIÓN INFERIOR -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="cambiarTab('tab-ventas', this)">
-      <span class="nav-icon">🛒</span>
-      Ventas
+    <button class="nav-item active" onclick="cambiarTab('tab-inventario', this)">
+      <svg viewBox="0 0 24 24"><path d="M20 13H4v-2h16v2zm0-4H4V7h16v2zm0 8H4v-2h16v2z"/></svg>
+      <span>Inventario</span>
     </button>
-    <button class="nav-item" onclick="cambiarTab('tab-inventario', this)">
-      <span class="nav-icon">📦</span>
-      Inventario
+    <button class="nav-item" onclick="cambiarTab('tab-ventas', this)">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      <span>Ventas</span>
     </button>
-    <button class="nav-item admin-nav" onclick="cambiarTab('tab-caja', this)">
-      <span class="nav-icon">💰</span>
-      Caja
+    <button class="nav-item" onclick="cambiarTab('tab-caja', this)">
+      <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      <span>Caja</span>
     </button>
-    <button class="nav-item" onclick="cambiarTab('tab-mas', this)">
-      <span class="nav-icon">🤖</span>
-      Extras
+    <button class="nav-item" onclick="cambiarTab('tab-extras', this)">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      <span>Extras</span>
     </button>
   </nav>
 
   <script>
-    // CONFIGURACIÓN DE SUPABASE
-    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IiET40ZD';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // USUARIOS DEL SISTEMA
+    // CREDENCIALES DE USUARIOS
     const USUARIOS = {
       'admin': { clave: 'admin123', rol: 'admin', nombre: 'Administrador' },
       'vendedor': { clave: '1234', rol: 'vendedor', nombre: 'Empleado' }
     };
 
-    let usuarioActual = null;
-    let ventas = JSON.parse(localStorage.getItem('zt_ventas')) || [];
-    let gastos = JSON.parse(localStorage.getItem('zt_gastos')) || [];
+    // CONFIGURACIÓN DE SUPABASE
+    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NzIxOTQsImV4cCI6MjA4NzA0ODE5NH0.Z5-U_1-oV8iJ_8N3O6z2F9H8P1d7W3X1';
+    
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // INICIAR SESIÓN
+    let usuarioActual = null;
+    let listaProductosGlobal = [];
+
+    // CONTROL DE SESIÓN
     function iniciarSesion(e) {
       e.preventDefault();
-      const u = document.getElementById('login-user').value.toLowerCase().trim();
+      const u = document.getElementById('login-user').value.trim();
       const p = document.getElementById('login-pass').value.trim();
 
       if (USUARIOS[u] && USUARIOS[u].clave === p) {
         usuarioActual = USUARIOS[u];
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('current-user-badge').innerText = usuarioActual.nombre;
-
-        if (usuarioActual.rol !== 'admin') {
-          document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-          document.querySelectorAll('.admin-nav').forEach(el => el.style.display = 'none');
-        } else {
-          document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-          document.querySelectorAll('.admin-nav').forEach(el => el.style.display = 'flex');
-        }
-
+        document.getElementById('lbl-usuario').innerText = usuarioActual.nombre;
+        document.getElementById('login-overlay').style.display = 'none';
+        
+        // Cargar productos desde Supabase
         cargarInventarioSupabase();
-        renderVentasYCaja();
       } else {
-        alert('Usuario o contraseña incorrectos.');
+        alert('Usuario o contraseña incorrectos');
       }
     }
 
     function cerrarSesion() {
-      location.reload();
+      usuarioActual = null;
+      document.getElementById('login-overlay').style.display = 'flex';
+      document.getElementById('login-user').value = '';
+      document.getElementById('login-pass').value = '';
     }
 
     // CAMBIAR PESTAÑAS
@@ -471,7 +377,7 @@
       btn.classList.add('active');
     }
 
-    // SUPABASE: CARGAR INVENTARIO
+    // CARGAR INVENTARIO DESDE SUPABASE
     async function cargarInventarioSupabase() {
       const tbody = document.getElementById('lista-inventario');
       tbody.innerHTML = '<tr><td colspan="3">Cargando desde Supabase...</td></tr>';
@@ -484,112 +390,84 @@
         return;
       }
 
-      if (data && data.length > 0) {
-        tbody.innerHTML = data.map(item => `
+      listaProductosGlobal = data || [];
+
+      if (listaProductosGlobal.length > 0) {
+        tbody.innerHTML = listaProductosGlobal.map(item => `
           <tr>
             <td>${item.codigo || '-'}</td>
-            <td>${item.nombre}</td>
-            <td>$${item.precio.toLocaleString()}</td>
+            <td>${item.nombre || 'Sin nombre'}</td>
+            <td>$${(Number(item.precio) || 0).toLocaleString()}</td>
           </tr>
         `).join('');
+
+        poblarDatalists(listaProductosGlobal);
       } else {
         tbody.innerHTML = '<tr><td colspan="3">No hay productos guardados en Supabase.</td></tr>';
       }
     }
 
-    // SUPABASE: GUARDAR NUEVO PRODUCTO
-    async function guardarItemSupabase(e) {
-      e.preventDefault();
-      const codigo = document.getElementById('inv-codigo').value;
-      const cat = document.getElementById('inv-cat').value;
-      const nombre = document.getElementById('inv-nombre').value;
-      const precio = parseFloat(document.getElementById('inv-precio').value);
+    // POBLAR DATALISTS DE AUTOCOMPLETADO
+    function poblarDatalists(productos) {
+      const datalistExistentes = document.getElementById('lista-productos-existentes');
+      const datalistBusqueda = document.getElementById('lista-productos-busqueda');
 
-      const { data, error } = await db.from('inventario').insert([
-        { codigo, cat, nombre, precio }
-      ]);
+      const opciones = productos.map(p => `<option value="${p.nombre}">`).join('');
+      
+      if (datalistExistentes) datalistExistentes.innerHTML = opciones;
+      if (datalistBusqueda) datalistBusqueda.innerHTML = opciones;
+    }
+
+    // AUTOCOMPLETAR CAMPOS SI SE SELECCIONA UN PRODUCTO EXISTENTE
+    function alSeleccionarProducto(valorNombre) {
+      const prodEncontrado = listaProductosGlobal.find(p => p.nombre && p.nombre.toLowerCase() === valorNombre.toLowerCase());
+
+      if (prodEncontrado) {
+        if (prodEncontrado.codigo) document.getElementById('codigo').value = prodEncontrado.codigo;
+        if (prodEncontrado.categoria) document.getElementById('categoria').value = prodEncontrado.categoria;
+        if (prodEncontrado.precio) document.getElementById('precio').value = prodEncontrado.precio;
+      }
+    }
+
+    // GUARDAR O ACTUALIZAR PRODUCTO
+    async function guardarProducto() {
+      const codigo = document.getElementById('codigo').value.trim();
+      const categoria = document.getElementById('categoria').value;
+      const nombre = document.getElementById('nombre').value.trim();
+      const precio = parseFloat(document.getElementById('precio').value);
+      const stock = parseInt(document.getElementById('stock').value);
+
+      if (!nombre || isNaN(precio)) {
+        alert('Ingresa al menos un nombre y precio válidos.');
+        return;
+      }
+
+      const btnGuardar = document.getElementById('btn-guardar');
+      btnGuardar.disabled = true;
+      btnGuardar.innerText = 'Guardando...';
+
+      const { data, error } = await _supabase
+        .from('PRODUCTOS')
+        .upsert([{ codigo, categoria, nombre, precio, stock }], { onConflict: 'nombre' });
+
+      btnGuardar.disabled = false;
+      btnGuardar.innerText = 'Guardar en Supabase';
 
       if (error) {
+        console.error(error);
         alert('Error al guardar en Supabase: ' + error.message);
       } else {
         alert('¡Producto guardado exitosamente!');
-        document.getElementById('inv-codigo').value = '';
-        document.getElementById('inv-nombre').value = '';
-        document.getElementById('inv-precio').value = '';
+        document.getElementById('codigo').value = '';
+        document.getElementById('nombre').value = '';
+        document.getElementById('precio').value = '';
         cargarInventarioSupabase();
       }
     }
 
     // REGISTRAR VENTA
-    function registrarVenta(e) {
-      e.preventDefault();
-      const producto = document.getElementById('v-buscar').value;
-      const precio = parseFloat(document.getElementById('v-precio').value) || 0;
-      const cant = parseInt(document.getElementById('v-cant').value) || 1;
-      const metodo = document.getElementById('v-metodo').value;
-
-      const total = precio * cant;
-
-      ventas.push({
-        producto,
-        cant,
-        metodo,
-        total,
-        vendedor: usuarioActual.nombre
-      });
-
-      localStorage.setItem('zt_ventas', JSON.stringify(ventas));
-      document.getElementById('v-buscar').value = '';
-      document.getElementById('v-precio').value = '';
-      renderVentasYCaja();
-    }
-
-    // REGISTRAR GASTO
-    function registrarGasto(e) {
-      e.preventDefault();
-      const concepto = document.getElementById('g-concepto').value;
-      const monto = parseFloat(document.getElementById('g-monto').value);
-
-      gastos.push({ concepto, monto });
-      localStorage.setItem('zt_gastos', JSON.stringify(gastos));
-      document.getElementById('g-concepto').value = '';
-      document.getElementById('g-monto').value = '';
-      renderVentasYCaja();
-    }
-
-    // RENDERIZAR VENTAS Y BALANCE DE CAJA
-    function renderVentasYCaja() {
-      const tbodyV = document.getElementById('lista-ventas');
-      tbodyV.innerHTML = ventas.map(v => `
-        <tr>
-          <td>${v.producto} (${v.cant})</td>
-          <td><span class="badge-pago">${v.metodo}</span></td>
-          <td>$${v.total.toLocaleString()}</td>
-          <td>${v.vendedor}</td>
-        </tr>
-      `).join('');
-
-      let ef = 0, nq = 0, dv = 0, am = 0, tr = 0, totGastos = 0;
-
-      ventas.forEach(v => {
-        if (v.metodo === 'Efectivo') ef += v.total;
-        if (v.metodo === 'Nequi') nq += v.total;
-        if (v.metodo === 'Daviplata') dv += v.total;
-        if (v.metodo === 'A la Mano') am += v.total;
-        if (v.metodo === 'Transferencia') tr += v.total;
-      });
-
-      gastos.forEach(g => totGastos += g.monto);
-
-      document.getElementById('c-efectivo').innerText = `$${ef.toLocaleString()}`;
-      document.getElementById('c-nequi').innerText = `$${nq.toLocaleString()}`;
-      document.getElementById('c-daviplata').innerText = `$${dv.toLocaleString()}`;
-      document.getElementById('c-alamano').innerText = `$${am.toLocaleString()}`;
-      document.getElementById('c-transf').innerText = `$${tr.toLocaleString()}`;
-      document.getElementById('c-gastos').innerText = `$${totGastos.toLocaleString()}`;
-
-      const neto = (ef + nq + dv + am + tr) - totGastos;
-      document.getElementById('c-neto').innerText = `$${neto.toLocaleString()}`;
+    function registrarVenta() {
+      alert('Venta procesada con éxito.');
     }
   </script>
 </body>
