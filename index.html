@@ -476,7 +476,7 @@
       const tbody = document.getElementById('lista-inventario');
       tbody.innerHTML = '<tr><td colspan="3">Cargando desde Supabase...</td></tr>';
 
-      const { data, error } = await db.from('inventario').select('*');
+      const { data, error } = await _supabase.from('PRODUCTOS').select('*');
 
       if (error) {
         console.error(error);
