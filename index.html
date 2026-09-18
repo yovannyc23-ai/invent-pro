@@ -248,16 +248,51 @@
       'vendedor': { clave: '1234', rol: 'vendedor', nombre: 'Empleado Vendedor' }
     };
     let usuarioActual = null;
-// CREDENCIALES SUPABASE
+// CREDENCIALES SUPABASE EXACTAS
 const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
-    const SUPABASE_KEY = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NzIxOTQsImV4cCI6MjA4NzA0ODE5NH0.Z5-U_1-oV8iJ_8N3O6z2F9H8P1d7W3X1`;
-    const headers = {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    };
+const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IiET40ZD';
+
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Content-Type': 'application/json'
+};
     
        let productosCargados = [];
+let proveedoresCargados = [];
+
+async function cargarProveedoresSupabase() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/PROVEEDORES?select=*`, { headers });
+    if (res.ok) {
+      proveedoresCargados = await res.json();
+      renderizarTablaProveedores();
+    }
+  } catch (e) {
+    console.error("Error al cargar proveedores:", e);
+  }
+}
+
+function renderizarTablaProveedores() {
+  const tbody = document.getElementById('tabla-proveedores');
+  if (!tbody) return;
+  
+  if (proveedoresCargados.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4">No hay proveedores registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = proveedoresCargados.map(p => `
+    <tr>
+      <td><strong>${p.NOMBRE || ''}</strong></td>
+      <td>${p.TELEFONO || ''}</td>
+      <td>${p.CATEGORIA || ''}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="eliminarProveedorSupabase('${p.id}')">Eliminar</button>
+      </td>
+    </tr>
+  `).join('');
+}
 
     // MANEJO DE SESIÓN
     document.getElementById('form-login').addEventListener('submit', function(e) {
