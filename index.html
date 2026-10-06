@@ -3,57 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Z-Tech S&S - POS & Inventario</title>
+  <title>Z-Tech S&S - POS & Inventario App</title>
+
+  <!-- CONFIGURACIÓN PWA PARA INSTALAR COMO APLICACIÓN NATIVA -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Z-Tech S&S">
+
+  <!-- MANIFEST EMBEBIDO VIA DATA URI -->
+  <link rel="manifest" href='data:application/manifest+json,{
+    "name": "Z-Tech S&S - POS & Inventario",
+    "short_name": "Z-Tech POS",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#e0f2fe",
+    "theme_color": "#0284c7",
+    "description": "Sistema POS e Inventario para Z-Tech S&S",
+    "icons": [
+      {
+        "src": "https://cdn-icons-png.flaticon.com/512/3144/3144456.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ]
+  }'>
   
   <!-- CDN Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
+  <!-- CDN SweetAlert2 (Alertas Profesionales) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- CDN HTML5-QRCode (Lector QR y Barras con Cámara) -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-    body { background-color: #e0f2fe !important; color: #1e293b; padding: 12px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; user-select: none; }
+    body { background-color: #e0f2fe; color: #1e293b; padding: 12px; }
     
     /* LOGIN OVERLAY */
-    #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-    .login-card { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 2px solid #0284c7; }
+    #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .login-card { background: white; padding: 30px; border-radius: 14px; text-align: center; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 2px solid #0284c7; }
     .login-card h2 { color: #0369a1; margin-bottom: 15px; }
     
-    .header { display: flex; justify-content: space-between; align-items: center; background: #0284c7 !important; color: white !important; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .header { display: flex; justify-content: space-between; align-items: center; background: #0284c7; color: white; padding: 14px 18px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     .header h1 { font-size: 1.2rem; }
 
-    /* MENÚ DE NAVEGACIÓN (PESTAÑAS POR BOTONES) */
+    /* BOTÓN DE INSTALACIÓN PWA */
+    #btn-install-pwa { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; display: none; margin-bottom: 12px; width: 100%; text-align: center; }
+
+    /* MENÚ DE NAVEGACIÓN (BOTONES DE PESTAÑAS) */
     .nav-menu { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 15px; scrollbar-width: none; }
     .nav-menu::-webkit-scrollbar { display: none; }
     .nav-btn { background: #bae6fd; color: #0369a1; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; white-space: nowrap; transition: 0.2s; flex-shrink: 0; }
     .nav-btn.active { background: #0284c7; color: white; }
 
-    /* SECCIONES / CONTENIDO */
+    /* SECCIONES Y TARJETAS */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .card { background: white !important; border-radius: 10px; padding: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-top: 4px solid #0284c7; }
-    h2, h3 { color: #0369a1 !important; margin-bottom: 12px; font-size: 1.05rem; }
+    .card { background: white; border-radius: 10px; padding: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-top: 4px solid #0284c7; }
+    h2, h3 { color: #0369a1; margin-bottom: 12px; font-size: 1.05rem; }
     
     .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.9rem; background-color: #f0f9ff; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #bae6fd; border-radius: 6px; font-size: 0.9rem; background-color: #f0f9ff; user-select: text; }
     input:focus, select:focus { border-color: #0284c7; outline: none; background-color: #fff; }
     
-    .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; }
-    .btn-primary { background: #0284c7 !important; color: white !important; }
-    .btn-primary:hover { background: #0369a1 !important; }
-    .btn-danger { background: #ef4444 !important; color: white !important; }
-    .btn-print { background: #38bdf8 !important; color: #0f172a !important; padding: 5px 10px; font-size: 0.8rem; border-radius: 4px; font-weight: bold; width: auto; }
+    .btn { padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-scan { background: #0d9488; color: white; }
+    .btn-scan:hover { background: #0f766e; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-print { background: #38bdf8; color: #0f172a; padding: 5px 10px; font-size: 0.8rem; border-radius: 4px; font-weight: bold; width: auto; }
 
     .table-container { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
     th, td { text-align: left; padding: 9px; border-bottom: 1px solid #e0f2fe; }
-    th { background-color: #e0f2fe !important; color: #0369a1 !important; }
+    th { background-color: #e0f2fe; color: #0369a1; }
     
-    .stock-bajo { background-color: #fef2f2 !important; color: #dc2626; font-weight: bold; }
+    .stock-bajo { background-color: #fef2f2; color: #dc2626; font-weight: bold; }
 
     .balance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
     .balance-box { background: #f0f9ff; padding: 10px; border-radius: 6px; border: 1px solid #bae6fd; text-align: center; font-size: 0.8rem; }
     .balance-box strong { display: block; font-size: 0.95rem; color: #0284c7; margin-top: 4px; }
     .neto-box { background: #e0f2fe; border: 2px solid #38bdf8; text-align: center; padding: 12px; font-weight: bold; font-size: 1.05rem; color: #0369a1; border-radius: 6px; }
+
+    #reader { width: 100%; max-width: 380px; margin: 10px auto; border-radius: 8px; overflow: hidden; display: none; }
 
     .only-admin { display: none; }
 
@@ -78,13 +116,16 @@
 
   <div class="header">
     <div>
-      <h1>Z-Tech S&S</h1>
+      <h1>Z-Tech S&S App</h1>
       <small id="user-role-label" style="opacity: 0.9;"></small>
     </div>
     <button class="btn btn-danger" style="width:auto; padding: 6px 12px; font-size: 0.8rem;" onclick="cerrarSesion()">Salir</button>
   </div>
 
-  <!-- NAVEGACIÓN POR BOTONES / PESTAÑAS -->
+  <!-- BOTÓN PARA INSTALAR APLICACIÓN -->
+  <button id="btn-install-pwa" onclick="instalarPWA()">📲 Instalar Z-Tech App en este dispositivo</button>
+
+  <!-- NAVEGACIÓN POR PESTAÑAS -->
   <div class="nav-menu">
     <button class="nav-btn active" onclick="cambiarPestana('sec-ventas', this)">🛒 Ventas</button>
     <button class="nav-btn" onclick="cambiarPestana('sec-gastos', this)">💸 Gastos</button>
@@ -93,13 +134,16 @@
     <button class="nav-btn only-admin" id="btn-tab-prov" onclick="cambiarPestana('sec-proveedores', this)">🚚 Proveedores</button>
   </div>
 
+  <div id="reader"></div>
+
   <!-- SECCIÓN 1: VENTAS -->
   <div id="sec-ventas" class="tab-content active">
     <div class="card">
       <h3>🛒 Registrar Venta</h3>
       <div class="grid-form">
-        <input type="text" id="vta-producto" list="dl-productos" placeholder="Buscar producto...">
+        <input type="text" id="vta-producto" list="dl-productos" placeholder="Buscar producto o código...">
         <datalist id="dl-productos"></datalist>
+        <button class="btn btn-scan" onclick="iniciarEscaner('venta')">📷 Escanear QR / Barras</button>
         <input type="number" id="vta-cantidad" value="1" min="1" placeholder="Cant.">
         <select id="vta-pago">
           <option value="Efectivo">Efectivo</option>
@@ -194,7 +238,8 @@
     <div class="card only-admin">
       <h3>➕ Agregar / Modificar Producto</h3>
       <div class="grid-form">
-        <input type="text" id="prod-codigo" placeholder="Código">
+        <input type="text" id="prod-codigo" placeholder="Código de barras/QR">
+        <button class="btn btn-scan" onclick="iniciarEscaner('inventario')">📷 Escanear Código</button>
         <select id="prod-categoria">
           <option value="Producto">Producto</option>
           <option value="Repuesto">Repuesto</option>
@@ -230,7 +275,7 @@
     </div>
   </div>
 
-  <!-- SECCIÓN 5: PROVEEDORES (SÓLO ADMIN) -->
+  <!-- SECCIÓN 5: PROVEEDORES -->
   <div id="sec-proveedores" class="tab-content">
     <div class="card">
       <h3>🚚 Registrar Proveedor</h3>
@@ -287,14 +332,36 @@
     let productosGlobales = [];
     let totalGastosGlobal = 0;
     let rolActual = null;
+    let html5QrcodeScanner = null;
+    let deferredPrompt = null;
 
-    // --- CAMBIO DE PESTAÑAS (BOTONES) ---
+    // --- INSTALACIÓN PWA COMO APLICACIÓN ---
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('btn-install-pwa').style.display = 'block';
+    });
+
+    function instalarPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+          if (choice.outcome === 'accepted') {
+            document.getElementById('btn-install-pwa').style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    // --- PESTAÑAS ---
     function cambiarPestana(idSeccion, btnElemento) {
       document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
       document.getElementById(idSeccion).classList.add('active');
       btnElemento.classList.add('active');
+      detenerEscaner();
     }
 
     // --- AUTENTICACIÓN ---
@@ -306,20 +373,20 @@
         document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'block');
         document.getElementById('login-overlay').style.display = 'none';
         iniciarApp();
+        Swal.fire({ icon: 'success', title: 'Bienvenido Admin', timer: 1400, showConfirmButton: false });
       } else if (pin === '0000') {
         rolActual = 'vendedor';
         document.getElementById('user-role-label').innerText = 'Rol: Vendedor';
         document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'none');
         document.getElementById('login-overlay').style.display = 'none';
         iniciarApp();
+        Swal.fire({ icon: 'success', title: 'Bienvenido Vendedor', timer: 1400, showConfirmButton: false });
       } else {
-        alert('PIN incorrecto.');
+        Swal.fire({ icon: 'error', title: 'PIN incorrecto' });
       }
     }
 
-    function cerrarSesion() {
-      location.reload();
-    }
+    function cerrarSesion() { location.reload(); }
 
     function iniciarApp() {
       cargarInventario();
@@ -334,25 +401,53 @@
       return f.toLocaleString('es-CO', { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
-    // --- GASTOS ---
+    // --- ESCÁNER CÓDIGO CON CÁMARA ---
+    function iniciarEscaner(modo) {
+      const readerDiv = document.getElementById('reader');
+      readerDiv.style.display = 'block';
+
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+      }
+
+      html5QrcodeScanner.render((decodedText) => {
+        detenerEscaner();
+        if (modo === 'venta') {
+          const prodEncontrado = productosGlobales.find(p => p.CODIGO === decodedText || p.NOMBRE.toLowerCase() === decodedText.toLowerCase());
+          if (prodEncontrado) {
+            document.getElementById('vta-producto').value = prodEncontrado.NOMBRE;
+            Swal.fire({ icon: 'success', title: 'Producto leído', text: prodEncontrado.NOMBRE, timer: 1200, showConfirmButton: false });
+          } else {
+            document.getElementById('vta-producto').value = decodedText;
+            Swal.fire({ icon: 'warning', title: 'Código leído', text: decodedText });
+          }
+        } else if (modo === 'inventario') {
+          document.getElementById('prod-codigo').value = decodedText;
+          Swal.fire({ icon: 'success', title: 'Código guardado', text: decodedText, timer: 1200, showConfirmButton: false });
+        }
+      }, (err) => {});
+    }
+
+    function detenerEscaner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(()=>{});
+        document.getElementById('reader').style.display = 'none';
+      }
+    }
+
+    // --- GASTOS (USANDO MONTO) ---
     async function registrarGasto() {
       const concepto = document.getElementById('gasto-concepto').value;
       const monto = parseFloat(document.getElementById('gasto-valor').value);
       const pago = document.getElementById('gasto-pago').value;
 
-      if (!concepto || isNaN(monto)) return alert('⚠️ Por favor ingresa un concepto y valor válidos');
+      if (!concepto || isNaN(monto)) return Swal.fire({ icon: 'warning', title: 'Ingresa un concepto y valor válidos' });
 
-      const { error } = await _supabase.from('GASTOS').insert([{
-        CONCEPTO: concepto,
-        MONTO: monto,
-        MEDIO_PAGO: pago
-      }]);
+      const { error } = await _supabase.from('GASTOS').insert([{ CONCEPTO: concepto, MONTO: monto, MEDIO_PAGO: pago }]);
 
-      if (error) {
-        return alert('❌ Error al guardar gasto: ' + error.message);
-      }
+      if (error) return Swal.fire({ icon: 'error', title: 'Error al registrar gasto', text: error.message });
 
-      alert('✅ ¡Gasto registrado con éxito!');
+      Swal.fire({ icon: 'success', title: 'Gasto registrado con éxito', timer: 1500, showConfirmButton: false });
 
       document.getElementById('gasto-concepto').value = '';
       document.getElementById('gasto-valor').value = '';
@@ -384,7 +479,7 @@
       document.getElementById('bal-gastos').innerText = '$' + totalGastosGlobal.toLocaleString();
     }
 
-    // --- INVENTARIO ---
+    // --- INVENTARIO (SUMA STOCK AUTOMÁTICA) ---
     async function cargarInventario() {
       const { data, error } = await _supabase.from('PRODUCTOS').select('*');
       const tbody = document.getElementById('tbl-inventario');
@@ -411,15 +506,14 @@
     }
 
     async function guardarProducto() {
-      const cod = document.getElementById('prod-codigo').value;
+      const cod = document.getElementById('prod-codigo').value.trim();
       const cat = document.getElementById('prod-categoria').value;
       const nom = document.getElementById('prod-nombre').value.trim();
       const pre = parseFloat(document.getElementById('prod-precio').value);
       const stkIngresado = parseInt(document.getElementById('prod-stock').value) || 0;
 
-      if (!nom || isNaN(pre)) return alert('⚠️ Ingresa un nombre y precio válidos');
+      if (!nom || isNaN(pre)) return Swal.fire({ icon: 'warning', title: 'Ingresa nombre y precio válidos' });
 
-      // Buscar si el producto ya existe para SUMAR stock
       const prodExistente = productosGlobales.find(p => p.NOMBRE.toLowerCase() === nom.toLowerCase());
 
       let stockFinal = stkIngresado;
@@ -435,11 +529,9 @@
         STOCK: stockFinal 
       }], { onConflict: 'NOMBRE' });
 
-      if (error) {
-        return alert('❌ Error al guardar producto: ' + error.message);
-      }
+      if (error) return Swal.fire({ icon: 'error', title: 'Error al guardar', text: error.message });
       
-      alert('✅ ¡Producto guardado/actualizado con éxito!');
+      Swal.fire({ icon: 'success', title: 'Producto guardado con éxito', timer: 1500, showConfirmButton: false });
 
       document.getElementById('prod-codigo').value = '';
       document.getElementById('prod-nombre').value = '';
@@ -449,37 +541,47 @@
     }
 
     async function eliminarProducto(nombre) {
-      if (confirm(`¿Eliminar ${nombre}?`)) {
+      const res = await Swal.fire({
+        title: `¿Eliminar ${nombre}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Sí, eliminar'
+      });
+
+      if (res.isConfirmed) {
         await _supabase.from('PRODUCTOS').delete().eq('NOMBRE', nombre);
-        alert('✅ Producto eliminado con éxito');
+        Swal.fire('Eliminado', 'El producto ha sido eliminado.', 'success');
         cargarInventario();
       }
     }
 
-    // --- VENTAS Y CAJA ---
+    // --- VENTAS ---
     async function registrarVenta() {
-      const nomProd = document.getElementById('vta-producto').value;
+      const valBusqueda = document.getElementById('vta-producto').value.trim();
       const cant = parseInt(document.getElementById('vta-cantidad').value) || 1;
       const pago = document.getElementById('vta-pago').value;
 
-      const prod = productosGlobales.find(p => p.NOMBRE.toLowerCase() === nomProd.toLowerCase());
-      if (!prod) return alert('⚠️ Selecciona un producto existente.');
-      if (prod.STOCK < cant) return alert(`⚠️ Stock insuficiente. Quedan ${prod.STOCK} unidades.`);
+      const prod = productosGlobales.find(p => p.NOMBRE.toLowerCase() === valBusqueda.toLowerCase() || p.CODIGO === valBusqueda);
+      
+      if (!prod) return Swal.fire({ icon: 'error', title: 'Producto no encontrado' });
+      if (prod.STOCK < cant) return Swal.fire({ icon: 'warning', title: 'Stock insuficiente', text: `Solo quedan ${prod.STOCK}` });
 
       const total = prod.PRECIO * cant;
 
-      const { error } = await _supabase.from('VENTAS').insert([{
-        PRODUCTO: prod.NOMBRE,
-        CANTIDAD: cant,
-        TOTAL: total,
-        MEDIO_PAGO: pago
-      }]);
+      const { error } = await _supabase.from('VENTAS').insert([{ PRODUCTO: prod.NOMBRE, CANTIDAD: cant, TOTAL: total, MEDIO_PAGO: pago }]);
 
-      if (error) return alert('❌ Error al registrar venta: ' + error.message);
+      if (error) return Swal.fire({ icon: 'error', title: 'Error en venta', text: error.message });
 
       await _supabase.from('PRODUCTOS').update({ STOCK: prod.STOCK - cant }).eq('NOMBRE', prod.NOMBRE);
 
-      alert('✅ ¡Venta registrada con éxito!');
+      Swal.fire({
+        icon: 'success',
+        title: '¡Venta Registrada Exitosamente!',
+        html: `<b>${prod.NOMBRE}</b><br>Total: $${total.toLocaleString()}`,
+        timer: 2000,
+        showConfirmButton: false
+      });
 
       document.getElementById('vta-producto').value = '';
       document.getElementById('vta-cantidad').value = '1';
@@ -562,13 +664,13 @@
       const tel = document.getElementById('prov-telefono').value;
       const cat = document.getElementById('prov-categoria').value;
 
-      if (!nom) return alert('⚠️ Ingresa el nombre del proveedor');
+      if (!nom) return Swal.fire({ icon: 'warning', title: 'Ingresa el nombre del proveedor' });
 
       const { error } = await _supabase.from('PROVEEDORES').insert([{ NOMBRE: nom, TELEFONO: tel, CATEGORIA: cat }]);
       
-      if (error) return alert('❌ Error al guardar proveedor: ' + error.message);
+      if (error) return Swal.fire({ icon: 'error', title: 'Error', text: error.message });
 
-      alert('✅ ¡Proveedor guardado con éxito!');
+      Swal.fire({ icon: 'success', title: 'Proveedor Guardado', timer: 1500, showConfirmButton: false });
 
       document.getElementById('prov-nombre').value = '';
       document.getElementById('prov-telefono').value = '';
