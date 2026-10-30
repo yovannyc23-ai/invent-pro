@@ -362,23 +362,26 @@
     }
 
     function autenticar() {
-      const pin = document.getElementById('pin-input').value.trim();
+      const pinInput = document.getElementById('pin-input');
+      if (!pinInput) return;
+      const pin = pinInput.value.trim();
+      
       if (pin === '1234') {
         rolActual = 'admin';
         document.getElementById('user-role-label').innerText = 'Rol: Administrador';
         document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'block');
         document.getElementById('login-overlay').style.display = 'none';
         iniciarApp();
-        Swal.fire({ icon: 'success', title: 'Bienvenido Administrador', timer: 1200, showConfirmButton: false });
+        alert('¡Bienvenido Administrador!');
       } else if (pin === '0000') {
         rolActual = 'vendedor';
         document.getElementById('user-role-label').innerText = 'Rol: Vendedor';
         document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'none');
         document.getElementById('login-overlay').style.display = 'none';
         iniciarApp();
-        Swal.fire({ icon: 'success', title: 'Bienvenido Vendedor', timer: 1200, showConfirmButton: false });
+        alert('¡Bienvenido Vendedor!');
       } else {
-        Swal.fire({ icon: 'error', title: 'PIN incorrecto', text: 'Intente nuevamente con 1234 o 0000' });
+        alert('PIN incorrecto. Intente con 1234 o 0000');
       }
     }
 
