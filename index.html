@@ -44,6 +44,7 @@
       <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px;">Sistema Profesional de Caja</p>
       <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:1.4rem; margin-bottom:20px; letter-spacing: 6px; width:100%; padding:12px; border: 2px solid #cbd5e1; border-radius: 8px;" maxlength="4">
       <button type="button" onclick="autenticarFuerza()" style="width:100%; padding: 14px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Iniciar Sesión</button>
+      <p id="error-login" style="color: red; font-size: 0.85rem; margin-top: 10px; display: none;"></p>
     </div>
   </div>
 
@@ -110,4 +111,555 @@
         <div id="seccion-inventario" class="contenido-seccion" style="display: none;">
           <h2 class="mb-3 text-primary"><i class="fas fa-box-open"></i> Gestión de Inventario</h2>
           <div class="card p-3 shadow-sm mb-3">
-            <h5>Registrar / Ing
+            <h5>Registrar / Ingresar Producto Nuevo o Stock</h5>
+            <div class="row g-2 mt-2">
+              <div class="col-md-2"><input type="text" id="inv-codigo" class="form-control" placeholder="Código"></div>
+              <div class="col-md-3"><input type="text" id="inv-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-2"><input type="number" id="inv-precio" class="form-control" placeholder="Precio ($)"></div>
+              <div class="col-md-2"><input type="number" id="inv-stock" class="form-control" placeholder="Stock"></div>
+              <div class="col-md-3"><button class="btn btn-primary w-100 fw-bold" onclick="agregarProducto()"><i class="fas fa-plus"></i> Guardar Producto</button></div>
+            </div>
+          </div>
+          <div class="card p-3 shadow-sm">
+            <h5 class="mb-3">Control de Stock</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                  <tr><th>Código</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="tabla-inventario-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROVEEDORES -->
+        <div id="seccion-proveedores" class="contenido-seccion" style="display: none;">
+          <h2 class="mb-3 text-primary"><i class="fas fa-truck"></i> Gestión de Proveedores</h2>
+          <div class="card p-3 shadow-sm mb-3">
+            <h5>Agregar Proveedor</h5>
+            <div class="row g-2 mt-2">
+              <div class="col-md-4"><input type="text" id="prov-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-3"><input type="text" id="prov-telefono" class="form-control" placeholder="Teléfono"></div>
+              <div class="col-md-3"><input type="text" id="prov-categoria" class="form-control" placeholder="Categoría"></div>
+              <div class="col-md-2"><button class="btn btn-primary w-100" onclick="agregarProveedor()"><i class="fas fa-plus"></i> Guardar</button></div>
+            </div>
+          </div>
+          <div class="card p-3 shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                  <tr><th>Nombre</th><th>Teléfono</th><th>Categoría</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tabla-proveedores-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- GASTOS Y CIERRE DE CAJA -->
+        <div id="seccion-gastos" class="contenido-seccion" style="display: none;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-primary m-0"><i class="fas fa-wallet"></i> Control de Gastos y Cierre de Caja</h2>
+            <div style="width: 250px;">
+              <select id="filtro-periodo" class="form-select fw-bold border-primary" onchange="calcularCierreCaja()">
+                <option value="hoy">☀️ Solo el Día de Hoy</option>
+                <option value="mes" selected>📆 Este Mes (Octubre 2026)</option>
+                <option value="todo">📅 Todo el Historial</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- TARJETAS DE RESUMEN -->
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="card bg-success text-white p-3 shadow-sm">
+                <h5>Total Ventas</h5>
+                <h3 id="resumen-ventas">$0</h3>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-danger text-white p-3 shadow-sm">
+                <h5>Total Gastos / Egresos</h5>
+                <h3 id="resumen-gastos">$0</h3>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-primary text-white p-3 shadow-sm">
+                <h5>Balance Neto</h5>
+                <h3 id="resumen-balance">$0</h3>
+              </div>
+            </div>
+          </div>
+
+          <!-- REGISTRAR GASTO -->
+          <div class="card p-3 shadow-sm mb-4">
+            <h5>Registrar Gasto / Egreso</h5>
+            <div class="row g-2 mt-2">
+              <div class="col-md-4"><input type="text" id="gasto-concepto" class="form-control" placeholder="Concepto (Ej. Almuerzo)"></div>
+              <div class="col-md-3"><input type="number" id="gasto-monto" class="form-control" placeholder="Valor ($)"></div>
+              <div class="col-md-3">
+                <select id="gasto-pago" class="form-select">
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Bancolombia A la Mano">Bancolombia A la Mano</option>
+                </select>
+              </div>
+              <div class="col-md-2"><button class="btn btn-danger w-100 fw-bold" onclick="registrarGasto()">Registrar Gasto</button></div>
+            </div>
+          </div>
+
+          <!-- TABLAS DE HISTORIAL (VENTAS Y EGRESOS) -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card p-3 shadow-sm">
+                <h5 class="mb-3 text-success"><i class="fas fa-shopping-cart"></i> Historial de Ventas</h5>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                  <table class="table table-hover align-middle font-monospace small">
+                    <thead class="table-dark">
+                      <tr><th>Fecha</th><th>Detalle</th><th>Pago</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="tabla-ventas-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card p-3 shadow-sm">
+                <h5 class="mb-3 text-danger"><i class="fas fa-receipt"></i> Historial de Egresos</h5>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                  <table class="table table-hover align-middle font-monospace small">
+                    <thead class="table-dark">
+                      <tr><th>Fecha</th><th>Concepto</th><th>Pago</th><th>Valor</th></tr>
+                    </thead>
+                    <tbody id="tabla-gastos-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PAGOS DIGITALES ACTUALIZADOS -->
+        <div id="seccion-pagos" class="contenido-seccion" style="display: none;">
+          <h2 class="mb-3 text-primary"><i class="fas fa-mobile-alt"></i> Canales de Pago Digital (Z-Tech S&S)</h2>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="card p-3 text-white text-center shadow-sm" style="background-color: #820ad1;">
+                <h5>Nequi</h5>
+                <h4 class="fw-bold my-2">316 549 3292</h4>
+                <p class="m-0 small">Titular: Z-Tech S&S</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card p-3 text-white text-center shadow-sm" style="background-color: #003366;">
+                <h5>Bancolombia A la Mano</h5>
+                <h4 class="fw-bold my-2">311 287 4745</h4>
+                <p class="m-0 small">Titular: Z-Tech S&S</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card p-3 text-dark text-center shadow-sm" style="background-color: #ffcc00;">
+                <h5>Daviplata</h5>
+                <h4 class="fw-bold my-2">316 549 3292</h4>
+                <p class="m-0 small">Titular: Z-Tech S&S</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- IMPRESIÓN DE FACTURA -->
+  <div id="area-impresion" style="display: none;">
+    <div style="width: 280px; margin: 0 auto; font-family: monospace; font-size: 12px;">
+      <h3 style="text-align: center; margin:0; font-size: 16px;">Z-TECH S&S</h3>
+      <p style="text-align: center; font-size: 11px; margin:0;">Popayán, Cauca | Cel: 3124552588</p>
+      <hr style="border-top: dashed 1px #000; margin: 5px 0;">
+      <p style="margin: 2px 0;"><strong>Fecha:</strong> <span id="print-fecha"></span></p>
+      <p style="margin: 2px 0;"><strong>Pago:</strong> <span id="print-metodo"></span></p>
+      <hr style="border-top: dashed 1px #000; margin: 5px 0;">
+      <div id="print-items"></div>
+      <hr style="border-top: dashed 1px #000; margin: 5px 0;">
+      <h4 style="text-align: right; margin: 5px 0; font-size: 14px;">TOTAL: <span id="print-total"></span></h4>
+      <p style="text-align: center; font-size: 10px; margin-top: 10px;">¡Gracias por su compra en Z-Tech S&S!</p>
+    </div>
+  </div>
+
+  <!-- SCRIPT -->
+  <script>
+    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IIET40ZD';
+    let supabaseClient = null;
+
+    try {
+      if (typeof supabase !== 'undefined') {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.error("Error Supabase:", e);
+    }
+
+    let rolActual = '';
+    let productosCache = [];
+    let carrito = [];
+    let ultimoTicket = null;
+    
+    let ventasMemoria = [
+      { TOTAL: 5000, PRODUCTO: 'SECADORA', MEDIO_PAGO: 'Efectivo', created_at: '2026-09-10 16:57:54' },
+      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Efectivo', created_at: '2026-09-10 16:58:57' },
+      { TOTAL: 60000, PRODUCTO: 'ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-09-10 17:06:58' },
+      { TOTAL: 60000, PRODUCTO: 'ROKOLA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-09-10 17:07:09' },
+      { TOTAL: 5000, PRODUCTO: 'SECADORA', MEDIO_PAGO: 'Daviplata', created_at: '2026-09-10 17:08:49' },
+      { TOTAL: 120000, PRODUCTO: '2x ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-10-11 12:25:28' },
+      { TOTAL: 120000, PRODUCTO: '2x ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-10-11 12:25:35' },
+      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-10-11 14:11:20' },
+      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-10-11 14:11:45' },
+      { TOTAL: 20000, PRODUCTO: '4x SECADORA', MEDIO_PAGO: 'Transferencia', created_at: '2026-10-11 14:14:20' },
+      { TOTAL: 75000, PRODUCTO: 'MOTUL 7100', MEDIO_PAGO: 'Efectivo', created_at: '2026-10-11 15:23:57' },
+      { TOTAL: 500000, PRODUCTO: '10x CABINA', MEDIO_PAGO: 'Efectivo', created_at: '2026-10-30 10:00:00' }
+    ];
+
+    let gastosMemoria = [
+      { CONCEPTO: 'ALMUERZO', MONTO: 12000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-11 15:16:30' },
+      { CONCEPTO: 'ARRIENDO', MONTO: 300000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-11 15:16:30' },
+      { CONCEPTO: 'DESAYUNO', MONTO: 90000, MEDIO_PAGO: 'Nequi', created_at: '2026-09-21 14:43:44' },
+      { CONCEPTO: 'DESAYUNO', MONTO: 5000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-22 12:22:21' },
+      { CONCEPTO: 'DESAYUNO', MONTO: 4000, MEDIO_PAGO: 'Efectivo', created_at: '2026-10-08 12:40:23' },
+      { CONCEPTO: 'TRANSPORTE', MONTO: 5000, MEDIO_PAGO: 'Efectivo', created_at: '2026-10-30 08:30:00' }
+    ];
+
+    let proveedoresMemoria = [
+      { id: 1, NOMBRE: 'JAPANI', TELEFONO: '3101234567', CATEGORIA: 'REPUESTOS' },
+      { id: 2, NOMBRE: 'STEVE MOTORS', TELEFONO: '3159876543', CATEGORIA: 'BATERÍAS' },
+      { id: 3, NOMBRE: 'NIPPON POWER', TELEFONO: '3205554433', CATEGORIA: 'ACCESORIOS' }
+    ];
+
+    const pinInputEl = document.getElementById('pin-input');
+    if (pinInputEl) {
+      pinInputEl.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') autenticarFuerza();
+      });
+    }
+
+    const inputBusqueda = document.getElementById('busqueda-pos');
+    if (inputBusqueda) {
+      inputBusqueda.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const codigoBuscado = this.value.trim().toUpperCase();
+          const prod = productosCache.find(p => (p.CODIGO && p.CODIGO.toUpperCase() === codigoBuscado) || p.id == codigoBuscado);
+          if (prod) {
+            agregarAlCarrito(prod.id);
+            this.value = '';
+          } else {
+            Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Código no existe', timer: 1500, showConfirmButton: false });
+          }
+        }
+      });
+    }
+
+    function autenticarFuerza() {
+      const pin = document.getElementById('pin-input').value.trim();
+      const errorLabel = document.getElementById('error-login');
+      
+      if (pin === '1234') {
+        rolActual = 'admin';
+        document.getElementById('user-role-label').innerText = 'Rol: Administrador';
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        iniciarApp();
+      } else if (pin === '0000') {
+        rolActual = 'vendedor';
+        document.getElementById('user-role-label').innerText = 'Rol: Vendedor';
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        iniciarApp();
+      } else {
+        if (errorLabel) {
+          errorLabel.innerText = 'PIN incorrecto. Usa 1234 o 0000';
+          errorLabel.style.display = 'block';
+        }
+      }
+    }
+
+    function cambiarPestana(idSeccion, elNav) {
+      document.querySelectorAll('.contenido-seccion').forEach(s => s.style.display = 'none');
+      const seccionDestino = document.getElementById(idSeccion);
+      if (seccionDestino) seccionDestino.style.display = 'block';
+      document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+      if (elNav) elNav.classList.add('active');
+    }
+
+    function cerrarSesion() { location.reload(); }
+
+    async function iniciarApp() {
+      await cargarProductos();
+      await cargarProveedores();
+      await sincronizarDatosNube();
+      calcularCierreCaja();
+    }
+
+    async function sincronizarDatosNube() {
+      if (supabaseClient) {
+        try {
+          const resV = await supabaseClient.from('VENTAS').select('*');
+          if (resV.data && resV.data.length > 0) ventasMemoria = resV.data;
+          
+          const resG = await supabaseClient.from('GASTOS').select('*');
+          if (resG.data && resG.data.length > 0) gastosMemoria = resG.data;
+        } catch (e) {}
+      }
+    }
+
+    async function cargarProductos() {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.from('PRODUCTOS').select('*');
+          if (!error && data && data.length > 0) {
+            productosCache = data;
+            renderizarPOS(productosCache);
+            renderizarInventario(productosCache);
+            return;
+          }
+        } catch (e) {}
+      }
+      productosCache = [
+        { id: 4, NOMBRE: 'CABINA', PRECIO: 50000, STOCK: 38, CODIGO: 'EMPTY' },
+        { id: 5, NOMBRE: 'ROKOLA', PRECIO: 60000, STOCK: 29, CODIGO: 'ROK1' },
+        { id: 6, NOMBRE: 'SECADORA', PRECIO: 5000, STOCK: 3, CODIGO: 'EMPTY' },
+        { id: 7, NOMBRE: 'MOTUL 5100', PRECIO: 50000, STOCK: 4, CODIGO: 'AC-MOT' },
+        { id: 8, NOMBRE: 'MOTUL 7100', PRECIO: 75000, STOCK: 8, CODIGO: 'ACEITE' }
+      ];
+      renderizarPOS(productosCache);
+      renderizarInventario(productosCache);
+    }
+
+    function renderizarPOS(prods) {
+      const grid = document.getElementById('grid-productos');
+      if (!grid) return;
+      grid.innerHTML = '';
+      prods.forEach(p => {
+        let badgeStock = p.STOCK <= 3 ? `<span class="badge bg-danger float-end">¡Bajo stock: ${p.STOCK}!</span>` : `<span class="badge bg-light text-secondary float-end">Stock: ${p.STOCK}</span>`;
+        grid.innerHTML += `
+          <div class="col-md-4">
+            <div class="card p-3 shadow-sm h-100" style="cursor: pointer;" onclick="agregarAlCarrito(${p.id})">
+              <h6 class="fw-bold text-dark">${p.NOMBRE}</h6>
+              <p class="text-muted small m-0">Código: ${p.CODIGO || 'S/C'}</p>
+              <p class="text-success fw-bold mt-2 m-0">$${Number(p.PRECIO).toLocaleString()} ${badgeStock}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function filtrarPOS(texto) {
+      const filtro = texto.toLowerCase();
+      const filtrados = productosCache.filter(p => p.NOMBRE.toLowerCase().includes(filtro) || (p.CODIGO && p.CODIGO.toLowerCase().includes(filtro)));
+      renderizarPOS(filtrados);
+    }
+
+    function renderizarInventario(prods) {
+      const tbody = document.getElementById('tabla-inventario-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      prods.forEach(p => {
+        let stockBadge = p.STOCK <= 3 ? `<span class="badge bg-danger fw-bold">${p.STOCK} (¡ALERTA!)</span>` : `<span class="badge bg-secondary">${p.STOCK}</span>`;
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.CODIGO || '-'}</td>
+            <td><strong>${p.NOMBRE}</strong></td>
+            <td>$${Number(p.PRECIO).toLocaleString()}</td>
+            <td>${stockBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id})">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function agregarProducto() {
+      const CODIGO = document.getElementById('inv-codigo').value.trim().toUpperCase();
+      const NOMBRE = document.getElementById('inv-nombre').value.trim().toUpperCase();
+      const PRECIO = parseFloat(document.getElementById('inv-precio').value);
+      const STOCK = parseInt(document.getElementById('inv-stock').value);
+
+      if (!NOMBRE || isNaN(PRECIO) || isNaN(STOCK)) {
+        Swal.fire('Error', 'Complete los campos obligatorios', 'warning');
+        return;
+      }
+
+      if (supabaseClient) {
+        try { await supabaseClient.from('PRODUCTOS').insert([{ NOMBRE, CODIGO, PRECIO, STOCK }]); } catch(e){}
+      }
+      
+      productosCache.push({ id: Date.now(), NOMBRE, CODIGO, PRECIO, STOCK });
+      Swal.fire('Guardado', 'Producto agregado exitosamente', 'success');
+      document.getElementById('inv-codigo').value = '';
+      document.getElementById('inv-nombre').value = '';
+      document.getElementById('inv-precio').value = '';
+      document.getElementById('inv-stock').value = '';
+      renderizarPOS(productosCache);
+      renderizarInventario(productosCache);
+    }
+
+    async function eliminarProducto(id) {
+      const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
+      if (res.isConfirmed) {
+        if (supabaseClient) {
+          try { await supabaseClient.from('PRODUCTOS').delete().eq('id', id); } catch(e){}
+        }
+        productosCache = productosCache.filter(p => p.id !== id);
+        renderizarPOS(productosCache);
+        renderizarInventario(productosCache);
+        Swal.fire('Eliminado', '', 'success');
+      }
+    }
+
+    function agregarAlCarrito(id) {
+      const p = productosCache.find(x => x.id === id);
+      if (!p || p.STOCK <= 0) {
+        Swal.fire('Sin stock', 'Unidades agotadas', 'error');
+        return;
+      }
+      let item = carrito.find(x => x.id === id);
+      if (item) {
+        if (item.cantidad < p.STOCK) item.cantidad++;
+        else return;
+      } else {
+        carrito.push({ ...p, cantidad: 1 });
+      }
+      renderizarCarrito();
+    }
+
+    function renderizarCarrito() {
+      const lista = document.getElementById('lista-carrito');
+      const totalEl = document.getElementById('total-carrito');
+      if (!lista || !totalEl) return;
+      if (carrito.length === 0) {
+        lista.innerHTML = '<p class="text-muted text-center">Carrito vacío</p>';
+        totalEl.innerText = '$0';
+        return;
+      }
+      lista.innerHTML = '';
+      let total = 0;
+      carrito.forEach((item, idx) => {
+        total += item.PRECIO * item.cantidad;
+        lista.innerHTML += `
+          <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+            <div><strong>${item.NOMBRE}</strong><br><small>$${Number(item.PRECIO).toLocaleString()} x ${item.cantidad}</small></div>
+            <div>
+              <button class="btn btn-sm btn-outline-danger" onclick="cambiarCant(${idx}, -1)">-</button>
+              <button class="btn btn-sm btn-outline-success" onclick="cambiarCant(${idx}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      });
+      totalEl.innerText = `$${total.toLocaleString()}`;
+    }
+
+    function cambiarCant(idx, delta) {
+      carrito[idx].cantidad += delta;
+      if (carrito[idx].cantidad <= 0) carrito.splice(idx, 1);
+      renderizarCarrito();
+    }
+
+    async function procesarVentaSupabase() {
+      if (carrito.length === 0) {
+        Swal.fire('Vacío', 'Agregue productos al carrito', 'warning');
+        return;
+      }
+      const MEDIO_PAGO = document.getElementById('metodo-pago').value;
+      const totalVenta = carrito.reduce((acc, i) => acc + (i.PRECIO * i.cantidad), 0);
+      const nombresProductos = carrito.map(i => `${i.cantidad}x ${i.NOMBRE}`).join(', ');
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('VENTAS').insert([{
+            PRODUCTO: nombresProductos,
+            CANTIDAD: 1,
+            TOTAL: totalVenta,
+            MEDIO_PAGO: MEDIO_PAGO
+          }]);
+        } catch (e) {}
+      }
+
+      ventasMemoria.push({ TOTAL: totalVenta, PRODUCTO: nombresProductos, MEDIO_PAGO: MEDIO_PAGO, created_at: new Date().toISOString() });
+
+      ultimoTicket = { fecha: new Date().toLocaleString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }), metodo: MEDIO_PAGO, items: [...carrito], total: totalVenta };
+      
+      carrito.forEach(item => {
+        const prod = productosCache.find(p => p.id === item.id);
+        if (prod) prod.STOCK -= item.cantidad;
+      });
+
+      carrito = [];
+      renderizarCarrito();
+      renderizarPOS(productosCache);
+      renderizarInventario(productosCache);
+      calcularCierreCaja();
+
+      Swal.fire({ 
+        icon: 'success', 
+        title: '¡Venta Registrada!', 
+        text: 'Procesada con éxito', 
+        confirmButtonText: 'Imprimir Tiquete' 
+      }).then(() => {
+        imprimirUltimaFactura();
+      });
+    }
+
+    function imprimirUltimaFactura() {
+      if (!ultimoTicket) return;
+      document.getElementById('print-fecha').innerText = ultimoTicket.fecha;
+      document.getElementById('print-metodo').innerText = ultimoTicket.metodo;
+      document.getElementById('print-total').innerText = `$${ultimoTicket.total.toLocaleString()}`;
+      let itemsH = '';
+      ultimoTicket.items.forEach(i => {
+        itemsH += `<div style="display:flex; justify-content:space-between; margin: 2px 0;"><span>${i.cantidad}x ${i.NOMBRE}</span><span>$${(i.PRECIO * i.cantidad).toLocaleString()}</span></div>`;
+      });
+      document.getElementById('print-items').innerHTML = itemsH;
+
+      const areaImpresion = document.getElementById('area-impresion');
+      areaImpresion.style.display = 'block';
+      
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => { 
+          areaImpresion.style.display = 'none'; 
+        }, 500);
+      }, 200);
+    }
+
+    async function cargarProveedores() {
+      if (supabaseClient) {
+        try {
+          const { data } = await supabaseClient.from('PROVEEDORES').select('*');
+          if (data && data.length > 0) proveedoresMemoria = data;
+        } catch (e) {}
+      }
+      renderizarProveedores();
+    }
+
+    function renderizarProveedores() {
+      const tbody = document.getElementById('tabla-proveedores-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      proveedoresMemoria.forEach(prov => {
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${prov.NOMBRE}</strong></td>
+            <td><i class="fas fa-phone-alt me-1"></i> ${prov.TELEFONO}</td>
+            <td><span class="badge bg-info text-dark">${prov.CATEGORIA || 'General'}</span></td>
+            <td><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(${prov.id})">Eliminar</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    async function agregarProveedor() {
+      const NOMBRE = document.getElementById('prov-nombre').value.trim().toUpperCase();
+      const TELEFONO = document.getElementById('prov
