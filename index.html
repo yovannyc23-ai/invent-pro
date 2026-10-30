@@ -3,665 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Z-Tech S&S - Sistema POS Profesional</title>
-
-  <!-- PWA CONFIG -->
-  <meta name="theme-color" content="#0f172a">
-  <meta name="mobile-web-app-capable" content="yes">
-  <link rel="manifest" href='data:application/manifest+json,{
-    "name": "Z-Tech S&S POS",
-    "short_name": "Z-Tech POS",
-    "start_url": "./index.html",
-    "display": "standalone",
-    "background_color": "#f8fafc",
-    "theme_color": "#0f172a"
-  }'>
-
-  <!-- CDN Librerías -->
+  <title>Z-Tech S&S - Sistema Profesional de Caja e Inventario</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- Bootstrap & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase & SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
   <style>
-    :root {
-      --primary: #0284c7;
-      --primary-dark: #0369a1;
-      --success: #10b981;
-      --danger: #ef4444;
-      --bg-main: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --border-color: #e2e8f0;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: var(--bg-main); color: var(--text-main); padding: 10px; }
-
-    /* LOGIN OVERLAY */
-    #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
-    .login-card { background: white; padding: 35px; border-radius: 16px; text-align: center; width: 340px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); border-top: 5px solid var(--primary); }
-    .login-card h2 { color: var(--primary-dark); margin-bottom: 8px; font-size: 1.5rem; }
-    .login-card p { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
-
-    /* HEADER PROFESIONAL */
-    .header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-    .header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; }
-    .user-badge { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 2px; display: inline-block; }
-
-    /* BOTÓN INSTALACIÓN PWA */
-    #btn-install-pwa { background: var(--success); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: none; margin-bottom: 12px; width: 100%; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-    /* MENÚ DE NAVEGACIÓN */
-    .nav-menu { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 15px; scrollbar-width: none; }
-    .nav-menu::-webkit-scrollbar { display: none; }
-    .nav-btn { background: #e2e8f0; color: #475569; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0; }
-    .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
-
-    /* SECCIONES Y TARJETAS */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .card { background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
+    :root { --bg-main: #f8fafc; --text-main: #1e293b; --primary: #0284c7; }
+    body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', system-ui, sans-serif; }
+    .sidebar { min-height: 100vh; background: #1e293b; color: white; }
+    .nav-link { color: #94a3b8; cursor: pointer; }
+    .nav-link.active, .nav-link:hover { color: white; background: #0284c7; border-radius: 8px; }
     
-    h2, h3 { color: var(--primary-dark); margin-bottom: 12px; font-size: 1.1rem; font-weight: 600; }
-    
-    /* FORMULARIOS Y CONTROLES */
-    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
-    input, select { width: 100%; padding: 11px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background-color: #f8fafc; color: var(--text-main); }
-    input:focus, select:focus { border-color: var(--primary); outline: none; background-color: #fff; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
-    
-    .btn { padding: 11px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-scan { background: #0d9488; color: white; }
-    .btn-scan:hover { background: #0f766e; }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-print { background: #e0f2fe; color: #0369a1; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; border: 1px solid #bae6fd; }
-
-    /* TABLAS ESTILO PROFESIONAL */
-    .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
-    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); }
-    th { background-color: #f1f5f9; color: #334155; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
-    tr:hover { background-color: #f8fafc; }
-    .stock-bajo { background-color: #fef2f2; color: #dc2626; font-weight: bold; }
-
-    /* BALANCES Y CIERRE DE CAJA */
-    .balance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
-    .balance-box { background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; font-size: 0.85rem; color: #64748b; }
-    .balance-box strong { display: block; font-size: 1.1rem; color: var(--primary-dark); margin-top: 6px; }
-    .neto-box { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; text-align: center; padding: 16px; font-weight: bold; font-size: 1.15rem; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2); }
-
-    #reader { width: 100%; max-width: 400px; margin: 15px auto; border-radius: 10px; overflow: hidden; display: none; border: 2px solid var(--primary); }
-    .only-admin { display: none; }
-
     @media print {
-      body * { visibility: hidden; }
-      #ticket-impresion, #ticket-impresion * { visibility: visible; }
-      #ticket-impresion { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; }
+      body * { visibility: hidden !important; }
+      #area-impresion, #area-impresion * { visibility: visible !important; }
+      #area-impresion {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 5px !important;
+        background: white !important;
+        display: block !important;
+      }
+      @page { size: 80mm auto; margin: 0mm; }
     }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN OVERLAY -->
-  <div id="login-overlay">
-    <div class="login-card">
-      <h2>Z-Tech S&S</h2>
-      <p>Sistema Profesional de Caja e Inventario</p>
-      <input type="password" id="pin-input" placeholder="Ingrese su PIN" style="text-align:center; font-size:1.3rem; margin-bottom:15px; letter-spacing: 3px;" maxlength="4">
-      <button class="btn btn-primary" style="width:100%; padding: 12px;" onclick="autenticar()">Iniciar Sesión</button>
+  <!-- LOGIN OVERLAY SEGURO -->
+  <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="background: white; padding: 40px; border-radius: 16px; text-align: center; width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
+      <h2 style="color: #0284c7; font-weight: bold; margin-bottom: 5px;">Z-Tech S&S</h2>
+      <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px;">Sistema Profesional de Caja</p>
+      <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:1.4rem; margin-bottom:20px; letter-spacing: 6px; width:100%; padding:12px; border: 2px solid #cbd5e1; border-radius: 8px;" maxlength="4">
+      <button type="button" onclick="autenticarFuerza()" style="width:100%; padding: 14px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Iniciar Sesión</button>
     </div>
   </div>
 
-  <div class="header">
-    <div>
-      <h1>Z-Tech S&S POS</h1>
-      <span id="user-role-label" class="user-badge"></span>
-    </div>
-    <button class="btn btn-danger" style="width:auto; padding: 6px 12px; font-size: 0.8rem;" onclick="cerrarSesion()">Salir</button>
-  </div>
-
-  <!-- BOTÓN INSTALACIÓN PWA -->
-  <button id="btn-install-pwa" onclick="instalarPWA()">📲 Instalar aplicación en este dispositivo</button>
-
-  <!-- MENÚ DE PESTAÑAS -->
-  <div class="nav-menu">
-    <button class="nav-btn active" onclick="cambiarPestana('sec-ventas', this)">🛒 Ventas (POS)</button>
-    <button class="nav-btn" onclick="cambiarPestana('sec-gastos', this)">💸 Gastos y Egresos</button>
-    <button class="nav-btn" onclick="cambiarPestana('sec-cierre', this)">📊 Cierre de Caja</button>
-    <button class="nav-btn" onclick="cambiarPestana('sec-inventario', this)">📦 Inventario / Stock</button>
-    <button class="nav-btn only-admin" id="btn-tab-prov" onclick="cambiarPestana('sec-proveedores', this)">🚚 Proveedores</button>
-  </div>
-
-  <div id="reader"></div>
-
-  <!-- SECCIÓN 1: VENTAS -->
-  <div id="sec-ventas" class="tab-content active">
-    <div class="card">
-      <h3>🛒 Registrar Venta Rápida</h3>
-      <div class="grid-form">
-        <input type="text" id="vta-producto" list="dl-productos" placeholder="🔍 Buscar producto o pasar lector USB...">
-        <datalist id="dl-productos"></datalist>
-        <button class="btn btn-scan" onclick="iniciarEscaner('venta')">📷 Usar Cámara</button>
-        <input type="number" id="vta-cantidad" value="1" min="1" placeholder="Cant.">
-        <select id="vta-pago">
-          <option value="Efectivo">💵 Efectivo</option>
-          <option value="Nequi">📱 Nequi</option>
-          <option value="Daviplata">📲 Daviplata</option>
-          <option value="Bancolombia A la Mano">🏦 A la Mano</option>
-          <option value="Transferencia">💳 Transferencia</option>
-        </select>
-        <button class="btn btn-primary" onclick="registrarVenta()" style="background: var(--success); font-size: 1rem;">⚡ Procesar Venta</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 2: GASTOS -->
-  <div id="sec-gastos" class="tab-content">
-    <div class="card">
-      <h3>💸 Registrar Gasto / Salida de Dinero</h3>
-      <div class="grid-form">
-        <input type="text" id="gasto-concepto" placeholder="Concepto (Ej: Almuerzo, repuesto)">
-        <input type="number" id="gasto-valor" placeholder="Valor ($)">
-        <select id="gasto-pago">
-          <option value="Efectivo">Efectivo</option>
-          <option value="Nequi">Nequi</option>
-          <option value="Daviplata">Daviplata</option>
-          <option value="Transferencia">Transferencia</option>
-        </select>
-        <button class="btn btn-danger" onclick="registrarGasto()">Registrar Egreso</button>
-      </div>
-    </div>
-    
-    <div class="card">
-      <h3>Historial de Egresos</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha / Hora</th>
-              <th>Concepto</th>
-              <th>Medio Pago</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-gastos">
-            <tr><td colspan="4" style="text-align: center; color: #64748b;">Sin gastos registrados</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 3: CIERRE DE CAJA -->
-  <div id="sec-cierre" class="tab-content">
-    <div class="card">
-      <h3>📊 Resumen y Balance Diario</h3>
-      <div class="balance-grid">
-        <div class="balance-box">💵 Efectivo <strong id="bal-efectivo">$0</strong></div>
-        <div class="balance-box">📱 Nequi <strong id="bal-nequi">$0</strong></div>
-        <div class="balance-box">📲 Daviplata <strong id="bal-daviplata">$0</strong></div>
-        <div class="balance-box">🏦 A la Mano <strong id="bal-alamano">$0</strong></div>
-        <div class="balance-box">💳 Transferencia <strong id="bal-transf">$0</strong></div>
-        <div class="balance-box" style="border-color:#fca5a5;">🔻 Total Gastos <strong id="bal-gastos" style="color:var(--danger);">$0</strong></div>
-      </div>
-      <div class="neto-box">
-        TOTAL NETO EN CAJA: <span id="bal-total">$0</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Historial Detallado de Ventas</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha / Hora</th>
-              <th>Producto</th>
-              <th>Cant.</th>
-              <th>Pago</th>
-              <th>Total</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-ventas">
-            <tr><td colspan="6" style="text-align: center; color: #64748b;">Cargando transacciones...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 4: INVENTARIO -->
-  <div id="sec-inventario" class="tab-content">
-    <div class="card only-admin">
-      <h3>➕ Agregar / Actualizar Producto en Stock</h3>
-      <div class="grid-form">
-        <input type="text" id="prod-codigo" placeholder="Código de barras (Lector USB o manual)">
-        <button class="btn btn-scan" onclick="iniciarEscaner('inventario')">📷 Cámara</button>
-        <select id="prod-categoria">
-          <option value="Producto">Producto</option>
-          <option value="Repuesto">Repuesto</option>
-          <option value="Accesorios">Accesorios</option>
-          <option value="General">General</option>
-        </select>
-        <input type="text" id="prod-nombre" list="dl-productos" placeholder="Nombre del producto">
-        <input type="number" id="prod-precio" placeholder="Precio venta ($)">
-        <input type="number" id="prod-stock" placeholder="Stock (Se suma al actual)">
-        <button class="btn btn-primary" onclick="guardarProducto()">Guardar en Inventario</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>📦 Control General de Inventario</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Categoría</th>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Stock</th>
-              <th class="only-admin">Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-inventario">
-            <tr><td colspan="6" style="text-align: center; color: #64748b;">Cargando inventario...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 5: PROVEEDORES -->
-  <div id="sec-proveedores" class="tab-content">
-    <div class="card">
-      <h3>🚚 Registrar Proveedor</h3>
-      <div class="grid-form">
-        <input type="text" id="prov-nombre" placeholder="Nombre de la empresa o persona">
-        <input type="text" id="prov-telefono" placeholder="Teléfono / WhatsApp">
-        <input type="text" id="prov-categoria" placeholder="Categoría de suministros">
-        <button class="btn btn-primary" onclick="guardarProveedor()">Guardar Proveedor</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Directorio de Proveedores</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Proveedor</th>
-              <th>Contacto</th>
-              <th>Categoría</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-proveedores">
-            <tr><td colspan="3" style="text-align: center; color: #64748b;">Cargando directorio...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TICKET IMPRESIÓN -->
-  <div id="ticket-impresion" style="display:none;">
-    <div style="text-align:center;">
-      <h2 style="margin:0; font-size:16px;">Z-TECH S&S</h2>
-      <p style="margin:2px 0;">Sistemas & Servicios • Popayán</p>
-      <p>------------------------------------------</p>
-    </div>
-    <p><strong>Fecha:</strong> <span id="tk-fecha"></span></p>
-    <p><strong>Artículo:</strong> <span id="tk-producto"></span></p>
-    <p><strong>Cantidad:</strong> <span id="tk-cantidad"></span></p>
-    <p><strong>Medio de Pago:</strong> <span id="tk-pago"></span></p>
-    <p>------------------------------------------</p>
-    <p style="font-size: 14px; text-align:right;"><strong>TOTAL: $<span id="tk-total"></span></strong></p>
-    <p>------------------------------------------</p>
-    <p style="text-align:center;">¡Gracias por su compra!<br>Conserve este ticket para garantía.</p>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IiET40ZD';
-    
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let productosGlobales = [];
-    let totalGastosGlobal = 0;
-    let rolActual = null;
-    let html5QrcodeScanner = null;
-    let deferredPrompt = null;
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById('btn-install-pwa').style.display = 'block';
-    });
-
-    function instalarPWA() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choice) => {
-          if (choice.outcome === 'accepted') {
-            document.getElementById('btn-install-pwa').style.display = 'none';
-          }
-          deferredPrompt = null;
-        });
-      }
-    }
-
-    function cambiarPestana(idSeccion, btnElemento) {
-      document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-      document.getElementById(idSeccion).classList.add('active');
-      btnElemento.classList.add('active');
-      detenerEscaner();
-    }
-
-    function autenticar() {
-      const pinInput = document.getElementById('pin-input');
-      if (!pinInput) return;
-      const pin = pinInput.value.trim();
-      
-      if (pin === '1234') {
-        rolActual = 'admin';
-        document.getElementById('user-role-label').innerText = 'Rol: Administrador';
-        document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'block');
-        document.getElementById('login-overlay').style.display = 'none';
-        iniciarApp();
-        alert('¡Bienvenido Administrador!');
-      } else if (pin === '0000') {
-        rolActual = 'vendedor';
-        document.getElementById('user-role-label').innerText = 'Rol: Vendedor';
-        document.querySelectorAll('.only-admin').forEach(el => el.style.display = 'none');
-        document.getElementById('login-overlay').style.display = 'none';
-        iniciarApp();
-        alert('¡Bienvenido Vendedor!');
-      } else {
-        alert('PIN incorrecto. Intente con 1234 o 0000');
-      }
-    }
-
-    function cerrarSesion() { location.reload(); }
-
-    function iniciarApp() {
-      cargarInventario();
-      cargarGastos();
-      cargarVentas();
-      if (rolActual === 'admin') cargarProveedores();
-    }
-
-    function formatearFecha(cadenaFecha) {
-      if (!cadenaFecha) return '-';
-      const f = new Date(cadenaFecha);
-      return f.toLocaleString('es-CO', { day: 'numeric', month: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-    }
-
-    function iniciarEscaner(modo) {
-      const readerDiv = document.getElementById('reader');
-      readerDiv.style.display = 'block';
-
-      if (!html5QrcodeScanner) {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-      }
-
-      html5QrcodeScanner.render((decodedText) => {
-        detenerEscaner();
-        if (modo === 'venta') {
-          const prodEncontrado = productosGlobales.find(p => p.CODIGO === decodedText || p.NOMBRE.toLowerCase() === decodedText.toLowerCase());
-          if (prodEncontrado) {
-            document.getElementById('vta-producto').value = prodEncontrado.NOMBRE;
-            Swal.fire({ icon: 'success', title: 'Producto detectado', text: prodEncontrado.NOMBRE, timer: 1000, showConfirmButton: false });
-          } else {
-            document.getElementById('vta-producto').value = decodedText;
-            Swal.fire({ icon: 'info', title: 'Código leído', text: decodedText });
-          }
-        } else if (modo === 'inventario') {
-          document.getElementById('prod-codigo').value = decodedText;
-          Swal.fire({ icon: 'success', title: 'Código asignado', text: decodedText, timer: 1000, showConfirmButton: false });
-        }
-      }, (err) => {});
-    }
-
-    function detenerEscaner() {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(()=>{});
-        document.getElementById('reader').style.display = 'none';
-      }
-    }
-
-    async function registrarGasto() {
-      const concepto = document.getElementById('gasto-concepto').value;
-      const monto = parseFloat(document.getElementById('gasto-valor').value);
-      const pago = document.getElementById('gasto-pago').value;
-
-      if (!concepto || isNaN(monto)) return Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Ingrese concepto y valor' });
-
-      const { error } = await _supabase.from('GASTOS').insert([{ CONCEPTO: concepto, MONTO: monto, MEDIO_PAGO: pago }]);
-      if (error) return Swal.fire({ icon: 'error', title: 'Error', text: error.message });
-
-      Swal.fire({ icon: 'success', title: 'Egreso registrado', timer: 1200, showConfirmButton: false });
-      document.getElementById('gasto-concepto').value = '';
-      document.getElementById('gasto-valor').value = '';
-      cargarGastos();
-      cargarVentas();
-    }
-
-    async function cargarGastos() {
-      const { data, error } = await _supabase.from('GASTOS').select('*').order('created_at', { ascending: false });
-      const tbody = document.getElementById('tbl-gastos');
-
-      if (error || !data) { tbody.innerHTML = '<tr><td colspan="4">Sin gastos registrados</td></tr>'; return; }
-
-      totalGastosGlobal = 0;
-      tbody.innerHTML = data.map(g => {
-        const val = Number(g.MONTO) || 0;
-        totalGastosGlobal += val;
-        return `
-          <tr>
-            <td>${formatearFecha(g.created_at)}</td>
-            <td><strong>${g.CONCEPTO || '-'}</strong></td>
-            <td>${g.MEDIO_PAGO || 'Efectivo'}</td>
-            <td style="color:var(--danger); font-weight:600;">-$${val.toLocaleString()}</td>
-          </tr>
-        `;
-      }).join('');
-
-      document.getElementById('bal-gastos').innerText = '$' + totalGastosGlobal.toLocaleString();
-    }
-
-    async function cargarInventario() {
-      const { data, error } = await _supabase.from('PRODUCTOS').select('*');
-      const tbody = document.getElementById('tbl-inventario');
-      const datalist = document.getElementById('dl-productos');
-
-      if (error) { tbody.innerHTML = '<tr><td colspan="6">Error al cargar productos</td></tr>'; return; }
-
-      productosGlobales = data || [];
-      datalist.innerHTML = productosGlobales.map(p => `<option value="${p.NOMBRE}">`).join('');
-
-      tbody.innerHTML = productosGlobales.map(p => {
-        const esBajo = (p.STOCK <= 5);
-        return `
-          <tr class="${esBajo ? 'stock-bajo' : ''}">
-            <td><code>${p.CODIGO || '-'}</code></td>
-            <td>${p.CATEGORIA || 'General'}</td>
-            <td><strong>${p.NOMBRE}</strong></td>
-            <td>$${Number(p.PRECIO).toLocaleString()}</td>
-            <td>${p.STOCK} ${esBajo ? '⚠️ (Bajo)' : ''}</td>
-            ${rolActual === 'admin' ? `<td><button class="btn btn-danger" style="padding:2px 8px; font-size:0.75rem;" onclick="eliminarProducto('${p.NOMBRE}')">Eliminar</button></td>` : ''}
-          </tr>
-        `;
-      }).join('');
-    }
-
-    async function guardarProducto() {
-      const cod = document.getElementById('prod-codigo').value.trim();
-      const cat = document.getElementById('prod-categoria').value;
-      const nom = document.getElementById('prod-nombre').value.trim();
-      const pre = parseFloat(document.getElementById('prod-precio').value);
-      const stkIngresado = parseInt(document.getElementById('prod-stock').value) || 0;
-
-      if (!nom || isNaN(pre)) return Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Ingrese nombre y precio válidos' });
-
-      const prodExistente = productosGlobales.find(p => p.NOMBRE.toLowerCase() === nom.toLowerCase());
-      let stockFinal = stkIngresado;
-      if (prodExistente) {
-        stockFinal = (parseInt(prodExistente.STOCK) || 0) + stkIngresado;
-      }
-
-      const { error } = await _supabase.from('PRODUCTOS').upsert([{ 
-        CODIGO: cod || (prodExistente ? prodExistente.CODIGO : ''), 
-        CATEGORIA: cat, 
-        NOMBRE: nom, 
-        PRECIO: pre, 
-        STOCK: stockFinal 
-      }], { onConflict: 'NOMBRE' });
-
-      if (error) return Swal.fire({ icon: 'error', title: 'Error al guardar', text: error.message });
-      
-      Swal.fire({ icon: 'success', title: 'Producto actualizado', timer: 1200, showConfirmButton: false });
-
-      document.getElementById('prod-codigo').value = '';
-      document.getElementById('prod-nombre').value = '';
-      document.getElementById('prod-precio').value = '';
-      document.getElementById('prod-stock').value = '';
-      cargarInventario();
-    }
-
-    async function eliminarProducto(nombre) {
-      const res = await Swal.fire({
-        title: `¿Eliminar ${nombre}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        confirmButtonText: 'Sí, eliminar'
-      });
-
-      if (res.isConfirmed) {
-        await _supabase.from('PRODUCTOS').delete().eq('NOMBRE', nombre);
-        Swal.fire('Eliminado', 'El producto ha sido eliminado.', 'success');
-        cargarInventario();
-      }
-    }
-
-    async function registrarVenta() {
-      const valBusqueda = document.getElementById('vta-producto').value.trim();
-      const cant = parseInt(document.getElementById('vta-cantidad').value) || 1;
-      const pago = document.getElementById('vta-pago').value;
-
-      const prod = productosGlobales.find(p => p.NOMBRE.toLowerCase() === valBusqueda.toLowerCase() || p.CODIGO === valBusqueda);
-      
-      if (!prod) return Swal.fire({ icon: 'error', title: 'Producto no encontrado', text: 'Seleccione un producto válido' });
-      if (prod.STOCK < cant) return Swal.fire({ icon: 'warning', title: 'Stock insuficiente', text: `Solo quedan ${prod.STOCK} unidades` });
-
-      const total = prod.PRECIO * cant;
-
-      const { error } = await _supabase.from('VENTAS').insert([{ PRODUCTO: prod.NOMBRE, CANTIDAD: cant, TOTAL: total, MEDIO_PAGO: pago }]);
-      if (error) return Swal.fire({ icon: 'error', title: 'Error', text: error.message });
-
-      await _supabase.from('PRODUCTOS').update({ STOCK: prod.STOCK - cant }).eq('NOMBRE', prod.NOMBRE);
-
-      Swal.fire({
-        icon: 'success',
-        title: '¡Venta Realizada!',
-        html: `<b>${prod.NOMBRE}</b> (${cant} un.)<br>Total: $${total.toLocaleString()}`,
-        timer: 1600,
-        showConfirmButton: false
-      });
-
-      document.getElementById('vta-producto').value = '';
-      document.getElementById('vta-cantidad').value = '1';
-      cargarInventario();
-      cargarVentas();
-    }
-
-    async function cargarVentas() {
-      const { data, error } = await _supabase.from('VENTAS').select('*').order('created_at', { ascending: false });
-      const tbody = document.getElementById('tbl-ventas');
-
-      if (error) { tbody.innerHTML = '<tr><td colspan="6">Error al cargar ventas</td></tr>'; return; }
-
-      let efec = 0, neq = 0, davi = 0, mano = 0, trans = 0;
-
-      tbody.innerHTML = (data || []).map(v => {
-        const total = Number(v.TOTAL) || 0;
-        const medio = v.MEDIO_PAGO || 'Efectivo';
-
-        if (medio === 'Efectivo') efec += total;
-        else if (medio === 'Nequi') neq += total;
-        else if (medio === 'Daviplata') davi += total;
-        else if (medio.includes('Mano')) mano += total;
-        else trans += total;
-
-        const vtaJson = JSON.stringify(v).replace(/"/g, '&quot;');
-
-        return `
-          <tr>
-            <td>${formatearFecha(v.created_at)}</td>
-            <td><strong>${v.PRODUCTO}</strong></td>
-            <td>${v.CANTIDAD}</td>
-            <td>${medio}</td>
-            <td style="font-weight:600; color:var(--success);">$${total.toLocaleString()}</td>
-            <td><button class="btn btn-print" onclick="imprimirTicket(${vtaJson})">📄 Ticket</button></td>
-          </tr>
-        `;
-      }).join('');
-
-      document.getElementById('bal-efectivo').innerText = '$' + efec.toLocaleString();
-      document.getElementById('bal-nequi').innerText = '$' + neq.toLocaleString();
-      document.getElementById('bal-daviplata').innerText = '$' + davi.toLocaleString();
-      document.getElementById('bal-alamano').innerText = '$' + mano.toLocaleString();
-      document.getElementById('bal-transf').innerText = '$' + trans.toLocaleString();
-      
-      const totalIngresos = efec + neq + davi + mano + trans;
-      const netoCaja = totalIngresos - totalGastosGlobal;
-      document.getElementById('bal-total').innerText = '$' + netoCajeFmt = netoCaja.toLocaleString();
-    }
-
-    function imprimirTicket(venta) {
-      document.getElementById('tk-fecha').innerText = formatearFecha(venta.created_at);
-      document.getElementById('tk-producto').innerText = venta.PRODUCTO;
-      document.getElementById('tk-cantidad').innerText = venta.CANTIDAD;
-      document.getElementById('tk-pago').innerText = venta.MEDIO_PAGO || 'Efectivo';
-      document.getElementById('tk-total').innerText = Number(venta.TOTAL).toLocaleString();
-
-      document.getElementById('ticket-impresion').style.display = 'block';
-      window.print();
-      document.getElementById('ticket-impresion').style.display = 'none';
-    }
-
-    async function cargarProveedores() {
-      const { data } = await _supabase.from('PROVEEDORES').select('*');
-      const tbody = document.getElementById('tbl-proveedores');
-      tbody.innerHTML = (data || []).map(p => `
-        <tr>
-          <td><strong>${p.NOMBRE}</strong></td>
-          <td>${p.TELEFONO || '-'}</td>
-          <td>${p.CATEGORIA || '-'}</td>
-        </tr>
-      `).join('');
-    }
-
-    async function guardarProveedor() {
-      const nom = document.getElementById('prov-nombre').value;
-      const tel = document.getElementById('prov-telefono').value;
-      const cat = document.getElementById('prov-categoria').value;
-
-      if (!nom) return Swal.fire({ icon: 'warning', title: 'Ingrese el nombre del proveedor' });
-
-      const { error } = await _supabase.from('PROVEEDORES').insert([{ NOMBRE: nom, TELEFONO: tel, CATEGORIA: cat }]);
-      if (error) return Swal.fire({ icon: 'error', title: 'Error', text: error.message });
-
-      Swal.fire({ icon: 'success', title: 'Proveedor Guardado', timer: 1200, showConfirmButton: false });
-      document.getElementById('prov-nombre').value = '';
-      document.getElementById('prov-telefono').value = '';
-      document.getElementById('prov-categoria').value = '';
-      cargarProveedores();
-    }
-  </script>
-</body>
-</html>
+  <!-- INTERFAZ PRINCIPAL -->
+  <div id="app-container" style="display: none;" class="container-fluid">
+    <div class="row">
+      <!-- Barra Lateral -->
+      <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+        <h4 class="text-white mb-4"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</h4>
+        <ul class="nav flex-column gap-2">
+          <li class="nav-item"><a class="nav-link active" onclick="cambiarPestana('seccion-pos', this)"><i class="fas fa-cash-register me-2"></i> POS / Caja</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-inventario', this)"><i class="fas fa-box-open me-2"></i> Inventario</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-proveedores', this)"><i class="fas fa-truck me-2"></i> Proveedores</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-gastos', this)"><i class="fas fa-wallet me-2"></i> Gastos y Caja</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-pagos', this)"><i class="fas fa-mobile-alt me-2"></i> Pagos Digitales</a></li>
+        </ul>
+        <hr class="text-secondary my-4">
+        <div class="small text-muted">
+          <span id="user-role-label" class="badge bg-info text-dark mb-2">Rol: Invitado</span>
+          <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt me-1"></i> Salir</button>
+        </div>
+      </nav>
+
+      <!-- Contenido Principal -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+        
+        <!-- POS / CAJA -->
+        <div id="seccion-pos" class="contenido-seccion">
+          <h2 class="mb-3 text-primary"><i class="fas fa-cash-register"></i> Punto de Venta (POS) - Z-Tech S&S</h2>
+          <div class="row">
+            <div class="col-md-8">
+              <div class="card p-3 shadow-sm mb-3">
+                <input type="text" id="busqueda-pos" class="form-control form-control-lg" placeholder="Escanear código de barras o buscar producto..." oninput="filtrarPOS(this.value)">
+              </div>
+              <div id="grid-productos" class="row g-3" style="max-height: 60vh; overflow-y: auto;"></div>
+            </div>
+            <div class="col-md-4">
+              <div class="card p-3 shadow-sm">
+                <h4>Factura Actual</h4>
+                <hr>
+                <div id="lista-carrito" style="min-height: 150px; max-height: 220px; overflow-y: auto;">
+                  <p class="text-muted text-center">Carrito vacío</p>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-3">
+                  <h5>Total:</h5>
+                  <h5 id="total-carrito" class="text-success">$0</h5>
+                </div>
+                <label class="form-label fw-bold">Método de Pago:</label>
+                <select id="metodo-pago" class="form-select mb-3">
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Bancolombia A la Mano">Bancolombia A la Mano</option>
+                  <option value="Daviplata">Daviplata</option>
+                </select>
+                <button class="btn btn-success w-100 py-2 fw-bold mb-2" onclick="procesarVentaSupabase()"><i class="fas fa-check-circle me-1"></i> Cobrar y Facturar</button>
+                <button class="btn btn-outline-secondary w-100 btn-sm" onclick="imprimirUltimaFactura()"><i class="fas fa-print me-1"></i> Imprimir Tiquete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div id="seccion-inventario" class="contenido-seccion" style="display: none;">
+          <h2 class="mb-3 text-primary"><i class="fas fa-box-open"></i> Gestión de Inventario</h2>
+          <div class="card p-3 shadow-sm mb-3">
+            <h5>Registrar / Ing
