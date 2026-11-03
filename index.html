@@ -13,7 +13,7 @@
   <style>
     :root { --bg-main: #f8fafc; --text-main: #1e293b; --primary: #0284c7; }
     body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', system-ui, sans-serif; }
-    .sidebar { min-height: 100vh; background: #1e293b; color: white; }
+    .sidebar { min-height: 100vh; background: #1e293b; color: white; transition: all 0.3s; }
     .nav-link { color: #94a3b8; cursor: pointer; }
     .nav-link.active, .nav-link:hover { color: white; background: #0284c7; border-radius: 8px; }
     
@@ -37,22 +37,31 @@
 <body>
 
   <!-- LOGIN OVERLAY SEGURO -->
-  <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;">
-    <div style="background: white; padding: 40px; border-radius: 16px; text-align: center; width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
+  <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="background: white; padding: 35px; border-radius: 16px; text-align: center; width: 90%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
       <h2 style="color: #0284c7; font-weight: bold; margin-bottom: 5px;">Z-Tech S&S</h2>
       <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px;">Sistema Profesional de Caja</p>
-      <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:1.4rem; margin-bottom:20px; letter-spacing: 6px; width:100%; padding:12px; border: 2px solid #cbd5e1; border-radius: 8px;" maxlength="4">
-      <button type="button" onclick="autenticarFuerza()" style="width:100%; padding: 14px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Iniciar Sesión</button>
+      <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:1.4rem; margin-bottom:20px; letter-spacing: 6px; width:100%; padding:12px; border: 2px solid #cbd5e1; border-radius: 8px;" maxlength="4" inputmode="numeric">
+      <button type="button" id="btn-login" onclick="autenticarFuerza()" style="width:100%; padding: 14px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Iniciar Sesión</button>
       <p id="error-login" style="color: red; font-size: 0.85rem; margin-top: 10px; display: none;"></p>
     </div>
   </div>
 
   <!-- INTERFAZ PRINCIPAL -->
   <div id="app-container" style="display: none;" class="container-fluid">
+    
+    <!-- BARRA SUPERIOR MÓVIL (Para celulares) -->
+    <nav class="navbar navbar-dark bg-dark d-md-none px-3 py-2">
+      <span class="navbar-brand fw-bold"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</span>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </nav>
+
     <div class="row">
       <!-- Barra Lateral -->
-      <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
-        <h4 class="text-white mb-4"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</h4>
+      <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+        <h4 class="text-white mb-4 d-none d-md-block"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</h4>
         <ul class="nav flex-column gap-2">
           <li class="nav-item"><a class="nav-link active" onclick="cambiarPestana('seccion-pos', this)"><i class="fas fa-cash-register me-2"></i> POS / Caja</a></li>
           <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-inventario', this)"><i class="fas fa-box-open me-2"></i> Inventario</a></li>
@@ -74,7 +83,7 @@
         <div id="seccion-pos" class="contenido-seccion">
           <h2 class="mb-3 text-primary"><i class="fas fa-cash-register"></i> Punto de Venta (POS) - Z-Tech S&S</h2>
           <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-8 mb-3">
               <div class="card p-3 shadow-sm mb-3">
                 <input type="text" id="busqueda-pos" class="form-control form-control-lg" placeholder="Escanear código de barras o buscar producto..." oninput="filtrarPOS(this.value)">
               </div>
@@ -112,11 +121,11 @@
           <div class="card p-3 shadow-sm mb-3">
             <h5>Registrar / Ingresar Producto Nuevo o Stock</h5>
             <div class="row g-2 mt-2">
-              <div class="col-md-2"><input type="text" id="inv-codigo" class="form-control" placeholder="Código"></div>
-              <div class="col-md-3"><input type="text" id="inv-nombre" class="form-control" placeholder="Nombre"></div>
-              <div class="col-md-2"><input type="number" id="inv-precio" class="form-control" placeholder="Precio ($)"></div>
-              <div class="col-md-2"><input type="number" id="inv-stock" class="form-control" placeholder="Stock"></div>
-              <div class="col-md-3"><button class="btn btn-primary w-100 fw-bold" onclick="agregarProducto()"><i class="fas fa-plus"></i> Guardar Producto</button></div>
+              <div class="col-md-2 mb-2"><input type="text" id="inv-codigo" class="form-control" placeholder="Código"></div>
+              <div class="col-md-3 mb-2"><input type="text" id="inv-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-2 mb-2"><input type="number" id="inv-precio" class="form-control" placeholder="Precio ($)"></div>
+              <div class="col-md-2 mb-2"><input type="number" id="inv-stock" class="form-control" placeholder="Stock"></div>
+              <div class="col-md-3 mb-2"><button class="btn btn-primary w-100 fw-bold" onclick="agregarProducto()"><i class="fas fa-plus"></i> Guardar Producto</button></div>
             </div>
           </div>
           <div class="card p-3 shadow-sm">
@@ -138,10 +147,10 @@
           <div class="card p-3 shadow-sm mb-3">
             <h5>Agregar Proveedor</h5>
             <div class="row g-2 mt-2">
-              <div class="col-md-4"><input type="text" id="prov-nombre" class="form-control" placeholder="Nombre"></div>
-              <div class="col-md-3"><input type="text" id="prov-telefono" class="form-control" placeholder="Teléfono"></div>
-              <div class="col-md-3"><input type="text" id="prov-categoria" class="form-control" placeholder="Categoría"></div>
-              <div class="col-md-2"><button class="btn btn-primary w-100" onclick="agregarProveedor()"><i class="fas fa-plus"></i> Guardar</button></div>
+              <div class="col-md-4 mb-2"><input type="text" id="prov-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-3 mb-2"><input type="text" id="prov-telefono" class="form-control" placeholder="Teléfono"></div>
+              <div class="col-md-3 mb-2"><input type="text" id="prov-categoria" class="form-control" placeholder="Categoría"></div>
+              <div class="col-md-2 mb-2"><button class="btn btn-primary w-100" onclick="agregarProveedor()"><i class="fas fa-plus"></i> Guardar</button></div>
             </div>
           </div>
           <div class="card p-3 shadow-sm">
@@ -158,19 +167,19 @@
 
         <!-- GASTOS Y CIERRE DE CAJA -->
         <div id="seccion-gastos" class="contenido-seccion" style="display: none;">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
             <h2 class="text-primary m-0"><i class="fas fa-wallet"></i> Control de Gastos y Cierre de Caja</h2>
-            <div style="width: 250px;">
+            <div style="width: 100%; max-width: 250px;">
               <select id="filtro-periodo" class="form-select fw-bold border-primary" onchange="calcularCierreCaja()">
                 <option value="hoy">☀️ Solo el Día de Hoy</option>
-                <option value="mes" selected>📆 Este Mes (Octubre 2026)</option>
+                <option value="mes" selected>📆 Este Mes</option>
                 <option value="todo">📅 Todo el Historial</option>
               </select>
             </div>
           </div>
 
           <!-- TARJETAS DE RESUMEN -->
-          <div class="row mb-4">
+          <div class="row mb-4 g-3">
             <div class="col-md-4">
               <div class="card bg-success text-white p-3 shadow-sm">
                 <h5>Total Ventas</h5>
@@ -195,21 +204,21 @@
           <div class="card p-3 shadow-sm mb-4">
             <h5>Registrar Gasto / Egreso</h5>
             <div class="row g-2 mt-2">
-              <div class="col-md-4"><input type="text" id="gasto-concepto" class="form-control" placeholder="Concepto (Ej. Almuerzo)"></div>
-              <div class="col-md-3"><input type="number" id="gasto-monto" class="form-control" placeholder="Valor ($)"></div>
-              <div class="col-md-3">
+              <div class="col-md-4 mb-2"><input type="text" id="gasto-concepto" class="form-control" placeholder="Concepto (Ej. Almuerzo)"></div>
+              <div class="col-md-3 mb-2"><input type="number" id="gasto-monto" class="form-control" placeholder="Valor ($)"></div>
+              <div class="col-md-3 mb-2">
                 <select id="gasto-pago" class="form-select">
                   <option value="Efectivo">Efectivo</option>
                   <option value="Nequi">Nequi</option>
                   <option value="Bancolombia A la Mano">Bancolombia A la Mano</option>
                 </select>
               </div>
-              <div class="col-md-2"><button class="btn btn-danger w-100 fw-bold" onclick="registrarGasto()">Registrar Gasto</button></div>
+              <div class="col-md-2 mb-2"><button class="btn btn-danger w-100 fw-bold" onclick="registrarGasto()">Registrar Gasto</button></div>
             </div>
           </div>
 
-          <!-- TABLAS DE HISTORIAL (VENTAS Y EGRESOS) -->
-          <div class="row">
+          <!-- TABLAS DE HISTORIAL -->
+          <div class="row g-3">
             <div class="col-md-6">
               <div class="card p-3 shadow-sm">
                 <h5 class="mb-3 text-success"><i class="fas fa-shopping-cart"></i> Historial de Ventas</h5>
@@ -274,7 +283,7 @@
 
   <!-- IMPRESIÓN DE FACTURA -->
   <div id="area-impresion" style="display: none;">
-    <div style="width: 280px; margin: 0 auto; font-family: monospace; font-size: 12px;">
+    <div style="width: 280mm; margin: 0 auto; font-family: monospace; font-size: 12px;">
       <h3 style="text-align: center; margin:0; font-size: 16px;">Z-TECH S&S</h3>
       <p style="text-align: center; font-size: 11px; margin:0;">Popayán, Cauca | Cel: 3124552588</p>
       <hr style="border-top: dashed 1px #000; margin: 5px 0;">
@@ -288,7 +297,8 @@
     </div>
   </div>
 
-  <!-- SCRIPT -->
+  <!-- SCRIPT BOOTSTRAP JS Y LÓGICA -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IIET40ZD';
@@ -368,9 +378,15 @@
       if (pinInputEl) {
         pinInputEl.focus();
         pinInputEl.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            autenticarFuerza();
-          }
+          if (e.key === 'Enter') autenticarFuerza();
+        });
+      }
+
+      const btnLogin = document.getElementById('btn-login');
+      if (btnLogin) {
+        btnLogin.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          autenticarFuerza();
         });
       }
 
@@ -399,6 +415,13 @@
       if (seccionDestino) seccionDestino.style.display = 'block';
       document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
       if (elNav) elNav.classList.add('active');
+
+      // Si estamos en celular, cerrar el menú desplegable automáticamente al elegir una opción
+      const sidebarMenu = document.getElementById('sidebarMenu');
+      if (sidebarMenu && sidebarMenu.classList.contains('show')) {
+        const bsCollapse = bootstrap.Collapse.getInstance(sidebarMenu);
+        if (bsCollapse) bsCollapse.hide();
+      }
     }
 
     function cerrarSesion() { location.reload(); }
@@ -452,7 +475,7 @@
       prods.forEach(p => {
         let badgeStock = p.STOCK <= 3 ? `<span class="badge bg-danger float-end">¡Bajo stock: ${p.STOCK}!</span>` : `<span class="badge bg-light text-secondary float-end">Stock: ${p.STOCK}</span>`;
         grid.innerHTML += `
-          <div class="col-md-4">
+          <div class="col-md-4 col-6">
             <div class="card p-3 shadow-sm h-100" style="cursor: pointer;" onclick="agregarAlCarrito(${p.id})">
               <h6 class="fw-bold text-dark">${p.NOMBRE}</h6>
               <p class="text-muted small m-0">Código: ${p.CODIGO || 'S/C'}</p>
@@ -741,89 +764,4 @@
 
       document.getElementById('resumen-ventas').innerText = `$${totalV.toLocaleString()}`;
       document.getElementById('resumen-gastos').innerText = `$${totalG.toLocaleString()}`;
-      const balanceEl = document.getElementById('resumen-balance');
-      balanceEl.innerText = `$${balanceNeto.toLocaleString()}`;
-      balanceEl.className = balanceNeto >= 0 ? 'text-white' : 'text-warning';
-
-      renderizarTablasHistorial(ventasFiltradas, gastosFiltrados);
-    }
-
-    function renderizarTablasHistorial(ventas, gastos) {
-      const tbodyV = document.getElementById('tabla-ventas-body');
-      if (tbodyV) {
-        tbodyV.innerHTML = '';
-        if (ventas.length === 0) {
-          tbodyV.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin ventas en este período</td></tr>';
-        } else {
-          ventas.slice().reverse().forEach(v => {
-            const fechaF = formatearFechaHora(v.created_at);
-            tbodyV.innerHTML += `
-              <tr>
-                <td><small>${fechaF}</small></td>
-                <td><strong>${v.PRODUCTO || 'Venta POS'}</strong></td>
-                <td>${v.MEDIO_PAGO || 'Efectivo'}</td>
-                <td class="text-success fw-bold">+$${Number(v.TOTAL).toLocaleString()}</td>
-              </tr>
-            `;
-          });
-        }
-      }
-
-      const tbodyG = document.getElementById('tabla-gastos-body');
-      if (tbodyG) {
-        tbodyG.innerHTML = '';
-        if (gastos.length === 0) {
-          tbodyG.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin egresos en este período</td></tr>';
-        } else {
-          gastos.slice().reverse().forEach(g => {
-            const fechaF = formatearFechaHora(g.created_at);
-            tbodyG.innerHTML += `
-              <tr>
-                <td><small>${fechaF}</small></td>
-                <td><strong>${g.CONCEPTO}</strong></td>
-                <td>${g.MEDIO_PAGO || 'Efectivo'}</td>
-                <td class="text-danger fw-bold">-$${Number(g.MONTO).toLocaleString()}</td>
-              </tr>
-            `;
-          });
-        }
-      }
-    }
-
-    async function registrarGasto() {
-      const CONCEPTO = document.getElementById('gasto-concepto').value.trim().toUpperCase();
-      const MONTO = parseFloat(document.getElementById('gasto-monto').value);
-      const MEDIO_PAGO = document.getElementById('gasto-pago').value;
-      if (!CONCEPTO || isNaN(MONTO)) {
-        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Complete los datos del gasto', 'warning');
-        return;
-      }
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('GASTOS').insert([{ CONCEPTO, MONTO, MEDIO_PAGO }]);
-        } catch (e) {}
-      }
-      gastosMemoria.push({ created_at: new Date().toISOString(), CONCEPTO, MONTO, MEDIO_PAGO });
-      calcularCierreCaja();
-      if (typeof Swal !== 'undefined') Swal.fire('Registrado', 'Gasto guardado', 'success');
-      document.getElementById('gasto-concepto').value = '';
-      document.getElementById('gasto-monto').value = '';
-    }
-  </script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      const balanceEl
