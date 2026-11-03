@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z-Tech S&S - Sistema Profesional de Caja e Inventario</title>
-  <link rel="manifest" href="manifest.json">
   <!-- Bootstrap & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -241,7 +240,7 @@
 
         </div>
 
-        <!-- PAGOS DIGITALES ACTUALIZADOS -->
+        <!-- PAGOS DIGITALES -->
         <div id="seccion-pagos" class="contenido-seccion" style="display: none;">
           <h2 class="mb-3 text-primary"><i class="fas fa-mobile-alt"></i> Canales de Pago Digital (Z-Tech S&S)</h2>
           <div class="row g-3">
@@ -338,44 +337,23 @@
       { id: 3, NOMBRE: 'NIPPON POWER', TELEFONO: '3205554433', CATEGORIA: 'ACCESORIOS' }
     ];
 
-    const pinInputEl = document.getElementById('pin-input');
-    if (pinInputEl) {
-      pinInputEl.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') autenticarFuerza();
-      });
-    }
-
-    const inputBusqueda = document.getElementById('busqueda-pos');
-    if (inputBusqueda) {
-      inputBusqueda.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-          const codigoBuscado = this.value.trim().toUpperCase();
-          const prod = productosCache.find(p => (p.CODIGO && p.CODIGO.toUpperCase() === codigoBuscado) || p.id == codigoBuscado);
-          if (prod) {
-            agregarAlCarrito(prod.id);
-            this.value = '';
-          } else {
-            Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Código no existe', timer: 1500, showConfirmButton: false });
-          }
-        }
-      });
-    }
-
     function autenticarFuerza() {
-      const pin = document.getElementById('pin-input').value.trim();
+      const pinInput = document.getElementById('pin-input');
       const errorLabel = document.getElementById('error-login');
+      if (!pinInput) return;
       
-      if (pin === '1234') {
-        rolActual = 'admin';
-        document.getElementById('user-role-label').innerText = 'Rol: Administrador';
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('app-container').style.display = 'block';
-        iniciarApp();
-      } else if (pin === '0000') {
-        rolActual = 'vendedor';
-        document.getElementById('user-role-label').innerText = 'Rol: Vendedor';
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('app-container').style.display = 'block';
+      const pin = pinInput.value.trim();
+      
+      if (pin === '1234' || pin === '0000') {
+        rolActual = pin === '1234' ? 'admin' : 'vendedor';
+        const roleLabel = document.getElementById('user-role-label');
+        if (roleLabel) roleLabel.innerText = 'Rol: ' + (rolActual === 'admin' ? 'Administrador' : 'Vendedor');
+        
+        const overlay = document.getElementById('login-overlay');
+        const container = document.getElementById('app-container');
+        if (overlay) overlay.style.display = 'none';
+        if (container) container.style.display = 'block';
+        
         iniciarApp();
       } else {
         if (errorLabel) {
@@ -384,6 +362,36 @@
         }
       }
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const pinInputEl = document.getElementById('pin-input');
+      if (pinInputEl) {
+        pinInputEl.focus();
+        pinInputEl.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            autenticarFuerza();
+          }
+        });
+      }
+
+      const inputBusqueda = document.getElementById('busqueda-pos');
+      if (inputBusqueda) {
+        inputBusqueda.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const codigoBuscado = this.value.trim().toUpperCase();
+            const prod = productosCache.find(p => (p.CODIGO && p.CODIGO.toUpperCase() === codigoBuscado) || p.id == codigoBuscado);
+            if (prod) {
+              agregarAlCarrito(prod.id);
+              this.value = '';
+            } else {
+              if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Código no existe', timer: 1500, showConfirmButton: false });
+              }
+            }
+          }
+        });
+      }
+    });
 
     function cambiarPestana(idSeccion, elNav) {
       document.querySelectorAll('.contenido-seccion').forEach(s => s.style.display = 'none');
@@ -488,7 +496,7 @@
       const STOCK = parseInt(document.getElementById('inv-stock').value);
 
       if (!NOMBRE || isNaN(PRECIO) || isNaN(STOCK)) {
-        Swal.fire('Error', 'Complete los campos obligatorios', 'warning');
+        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Complete los campos obligatorios', 'warning');
         return;
       }
 
@@ -497,7 +505,7 @@
       }
       
       productosCache.push({ id: Date.now(), NOMBRE, CODIGO, PRECIO, STOCK });
-      Swal.fire('Guardado', 'Producto agregado exitosamente', 'success');
+      if (typeof Swal !== 'undefined') Swal.fire('Guardado', 'Producto agregado exitosamente', 'success');
       document.getElementById('inv-codigo').value = '';
       document.getElementById('inv-nombre').value = '';
       document.getElementById('inv-precio').value = '';
@@ -507,22 +515,29 @@
     }
 
     async function eliminarProducto(id) {
-      const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
-      if (res.isConfirmed) {
+      let confirmado = true;
+      if (typeof Swal !== 'undefined') {
+        const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
+        confirmado = res.isConfirmed;
+      } else {
+        confirmado = confirm('¿Eliminar producto?');
+      }
+
+      if (confirmado) {
         if (supabaseClient) {
           try { await supabaseClient.from('PRODUCTOS').delete().eq('id', id); } catch(e){}
         }
         productosCache = productosCache.filter(p => p.id !== id);
         renderizarPOS(productosCache);
         renderizarInventario(productosCache);
-        Swal.fire('Eliminado', '', 'success');
+        if (typeof Swal !== 'undefined') Swal.fire('Eliminado', '', 'success');
       }
     }
 
     function agregarAlCarrito(id) {
       const p = productosCache.find(x => x.id === id);
       if (!p || p.STOCK <= 0) {
-        Swal.fire('Sin stock', 'Unidades agotadas', 'error');
+        if (typeof Swal !== 'undefined') Swal.fire('Sin stock', 'Unidades agotadas', 'error');
         return;
       }
       let item = carrito.find(x => x.id === id);
@@ -569,7 +584,7 @@
 
     async function procesarVentaSupabase() {
       if (carrito.length === 0) {
-        Swal.fire('Vacío', 'Agregue productos al carrito', 'warning');
+        if (typeof Swal !== 'undefined') Swal.fire('Vacío', 'Agregue productos al carrito', 'warning');
         return;
       }
       const MEDIO_PAGO = document.getElementById('metodo-pago').value;
@@ -602,14 +617,7 @@
       renderizarInventario(productosCache);
       calcularCierreCaja();
 
-      Swal.fire({ 
-        icon: 'success', 
-        title: '¡Venta Registrada!', 
-        text: 'Procesada con éxito', 
-        confirmButtonText: 'Imprimir Tiquete' 
-      }).then(() => {
-        imprimirUltimaFactura();
-      });
+      imprimirUltimaFactura();
     }
 
     function imprimirUltimaFactura() {
@@ -662,4 +670,160 @@
 
     async function agregarProveedor() {
       const NOMBRE = document.getElementById('prov-nombre').value.trim().toUpperCase();
-      const TELEFONO = document.getElementById('prov
+      const TELEFONO = document.getElementById('prov-telefono').value.trim();
+      const CATEGORIA = document.getElementById('prov-categoria').value.trim().toUpperCase();
+      if (!NOMBRE || !TELEFONO) {
+        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Ingrese nombre y teléfono', 'warning');
+        return;
+      }
+      if (supabaseClient) {
+        try { await supabaseClient.from('PROVEEDORES').insert([{ NOMBRE, TELEFONO, CATEGORIA }]); } catch(e){}
+      }
+      proveedoresMemoria.push({ id: Date.now(), NOMBRE, TELEFONO, CATEGORIA });
+      renderizarProveedores();
+      if (typeof Swal !== 'undefined') Swal.fire('Éxito', 'Proveedor agregado', 'success');
+      document.getElementById('prov-nombre').value = '';
+      document.getElementById('prov-telefono').value = '';
+      document.getElementById('prov-categoria').value = '';
+    }
+
+    async function eliminarProveedor(id) {
+      if (supabaseClient) {
+        try { await supabaseClient.from('PROVEEDORES').delete().eq('id', id); } catch(e){}
+      }
+      proveedoresMemoria = proveedoresMemoria.filter(p => p.id !== id);
+      renderizarProveedores();
+      if (typeof Swal !== 'undefined') Swal.fire('Eliminado', '', 'success');
+    }
+
+    function formatearFechaHora(fechaStr) {
+      if (!fechaStr) return 'Reciente';
+      const fecha = new Date(fechaStr);
+      if (isNaN(fecha)) return fechaStr;
+      return fecha.toLocaleString('es-CO', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      });
+    }
+
+    function calcularCierreCaja() {
+      const filtro = document.getElementById('filtro-periodo').value;
+      const hoyStr = new Date().toISOString().slice(0, 10);
+      const mesStr = hoyStr.slice(0, 7);
+
+      const ventasFiltradas = ventasMemoria.filter(v => {
+        if (!v.created_at) return true;
+        const fechaV = v.created_at.slice(0, 10);
+        if (filtro === 'hoy') return fechaV === hoyStr;
+        if (filtro === 'mes') return fechaV.startsWith(mesStr);
+        return true;
+      });
+
+      const gastosFiltrados = gastosMemoria.filter(g => {
+        if (!g.created_at) return true;
+        const fechaG = g.created_at.slice(0, 10);
+        if (filtro === 'hoy') return fechaG === hoyStr;
+        if (filtro === 'mes') return fechaG.startsWith(mesStr);
+        return true;
+      });
+
+      let totalV = 0;
+      ventasFiltradas.forEach(v => totalV += Number(v.TOTAL));
+
+      let totalG = 0;
+      gastosFiltrados.forEach(g => totalG += Number(g.MONTO));
+
+      const balanceNeto = totalV - totalG;
+
+      document.getElementById('resumen-ventas').innerText = `$${totalV.toLocaleString()}`;
+      document.getElementById('resumen-gastos').innerText = `$${totalG.toLocaleString()}`;
+      const balanceEl = document.getElementById('resumen-balance');
+      balanceEl.innerText = `$${balanceNeto.toLocaleString()}`;
+      balanceEl.className = balanceNeto >= 0 ? 'text-white' : 'text-warning';
+
+      renderizarTablasHistorial(ventasFiltradas, gastosFiltrados);
+    }
+
+    function renderizarTablasHistorial(ventas, gastos) {
+      const tbodyV = document.getElementById('tabla-ventas-body');
+      if (tbodyV) {
+        tbodyV.innerHTML = '';
+        if (ventas.length === 0) {
+          tbodyV.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin ventas en este período</td></tr>';
+        } else {
+          ventas.slice().reverse().forEach(v => {
+            const fechaF = formatearFechaHora(v.created_at);
+            tbodyV.innerHTML += `
+              <tr>
+                <td><small>${fechaF}</small></td>
+                <td><strong>${v.PRODUCTO || 'Venta POS'}</strong></td>
+                <td>${v.MEDIO_PAGO || 'Efectivo'}</td>
+                <td class="text-success fw-bold">+$${Number(v.TOTAL).toLocaleString()}</td>
+              </tr>
+            `;
+          });
+        }
+      }
+
+      const tbodyG = document.getElementById('tabla-gastos-body');
+      if (tbodyG) {
+        tbodyG.innerHTML = '';
+        if (gastos.length === 0) {
+          tbodyG.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin egresos en este período</td></tr>';
+        } else {
+          gastos.slice().reverse().forEach(g => {
+            const fechaF = formatearFechaHora(g.created_at);
+            tbodyG.innerHTML += `
+              <tr>
+                <td><small>${fechaF}</small></td>
+                <td><strong>${g.CONCEPTO}</strong></td>
+                <td>${g.MEDIO_PAGO || 'Efectivo'}</td>
+                <td class="text-danger fw-bold">-$${Number(g.MONTO).toLocaleString()}</td>
+              </tr>
+            `;
+          });
+        }
+      }
+    }
+
+    async function registrarGasto() {
+      const CONCEPTO = document.getElementById('gasto-concepto').value.trim().toUpperCase();
+      const MONTO = parseFloat(document.getElementById('gasto-monto').value);
+      const MEDIO_PAGO = document.getElementById('gasto-pago').value;
+      if (!CONCEPTO || isNaN(MONTO)) {
+        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Complete los datos del gasto', 'warning');
+        return;
+      }
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('GASTOS').insert([{ CONCEPTO, MONTO, MEDIO_PAGO }]);
+        } catch (e) {}
+      }
+      gastosMemoria.push({ created_at: new Date().toISOString(), CONCEPTO, MONTO, MEDIO_PAGO });
+      calcularCierreCaja();
+      if (typeof Swal !== 'undefined') Swal.fire('Registrado', 'Gasto guardado', 'success');
+      document.getElementById('gasto-concepto').value = '';
+      document.getElementById('gasto-monto').value = '';
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
