@@ -4,31 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z-Tech S&S - Sistema Profesional de Caja e Inventario</title>
-  <!-- Bootstrap & FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Supabase & SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     :root { --bg-main: #f8fafc; --text-main: #1e293b; --primary: #0284c7; }
     body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', system-ui, sans-serif; }
-    .sidebar { min-height: 100vh; background: #1e293b; color: white; transition: all 0.3s; }
+    .sidebar { min-height: 100vh; background: #1e293b; color: white; }
     .nav-link { color: #94a3b8; cursor: pointer; }
     .nav-link.active, .nav-link:hover { color: white; background: #0284c7; border-radius: 8px; }
     
-    @media print {
+  @media print {
       body * { visibility: hidden !important; }
       #area-impresion, #area-impresion * { visibility: visible !important; }
       #area-impresion {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 80mm !important;
-        margin: 0 !important;
-        padding: 5px !important;
-        background: white !important;
-        display: block !important;
+        position: absolute !important; left: 0; top: 0; width: 80mm; margin: 0; padding: 2mm; background: white; display: block;
+      }
+      #area-etiqueta, #area-etiqueta * { visibility: visible !important; }
+      #area-etiqueta {
+        position: absolute !important; left: 0; top: 0; width: 78mm !important; max-height: 45mm !important; background: white; display: block !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important;
       }
       @page { size: 80mm auto; margin: 0mm; }
     }
@@ -36,43 +33,23 @@
 </head>
 <body>
 
-  <!-- LOGIN OVERLAY SEGURO -->
-  <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999;">
-    <div style="background: white; padding: 35px; border-radius: 16px; text-align: center; width: 90%; max-width: 360px; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
-      <h2 style="color: #0284c7; font-weight: bold; margin-bottom: 5px;">Z-Tech S&S</h2>
-      <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px;">Sistema Profesional de Caja</p>
-      <input type="password" id="pin-input" placeholder="••••" style="text-align:center; font-size:1.4rem; margin-bottom:20px; letter-spacing: 6px; width:100%; padding:12px; border: 2px solid #cbd5e1; border-radius: 8px;" maxlength="4" inputmode="numeric">
-      <button type="button" id="btn-login" onclick="autenticarFuerza()" style="width:100%; padding: 14px; background-color: #0284c7; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Iniciar Sesión</button>
-      <p id="error-login" style="color: red; font-size: 0.85rem; margin-top: 10px; display: none;"></p>
-    </div>
-  </div>
-
   <!-- INTERFAZ PRINCIPAL -->
-  <div id="app-container" style="display: none;" class="container-fluid">
-    
-    <!-- BARRA SUPERIOR MÓVIL (Para celulares) -->
-    <nav class="navbar navbar-dark bg-dark d-md-none px-3 py-2">
-      <span class="navbar-brand fw-bold"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</span>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-    </nav>
-
+  <div id="app-container" class="container-fluid">
     <div class="row">
-      <!-- Barra Lateral -->
-      <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
-        <h4 class="text-white mb-4 d-none d-md-block"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</h4>
+      <!-- Barra Lateral / Menú -->
+      <nav class="col-md-3 col-lg-2 d-md-block sidebar p-3">
+        <h4 class="text-white mb-4"><i class="fas fa-boxes text-info"></i> Z-Tech S&S</h4>
         <ul class="nav flex-column gap-2">
           <li class="nav-item"><a class="nav-link active" onclick="cambiarPestana('seccion-pos', this)"><i class="fas fa-cash-register me-2"></i> POS / Caja</a></li>
-          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-inventario', this)"><i class="fas fa-box-open me-2"></i> Inventario</a></li>
+          <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-inventario', this)"><i class="fas fa-box-open me-2"></i> Inventario & Códigos</a></li>
           <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-proveedores', this)"><i class="fas fa-truck me-2"></i> Proveedores</a></li>
           <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-gastos', this)"><i class="fas fa-wallet me-2"></i> Gastos y Caja</a></li>
           <li class="nav-item"><a class="nav-link" onclick="cambiarPestana('seccion-pagos', this)"><i class="fas fa-mobile-alt me-2"></i> Pagos Digitales</a></li>
         </ul>
         <hr class="text-secondary my-4">
         <div class="small text-muted">
-          <span id="user-role-label" class="badge bg-info text-dark mb-2">Rol: Invitado</span>
-          <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt me-1"></i> Salir</button>
+          <span class="badge bg-info text-dark mb-2">Rol: Administrador</span>
+          <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="location.reload()"><i class="fas fa-sync-alt me-1"></i> Recargar Datos</button>
         </div>
       </nav>
 
@@ -85,7 +62,11 @@
           <div class="row">
             <div class="col-md-8 mb-3">
               <div class="card p-3 shadow-sm mb-3">
-                <input type="text" id="busqueda-pos" class="form-control form-control-lg" placeholder="Escanear código de barras o buscar producto..." oninput="filtrarPOS(this.value)">
+                <div class="input-group">
+                  <input type="text" id="busqueda-pos" class="form-control form-control-lg" placeholder="Escanear código de barras o buscar producto..." oninput="filtrarPOS(this.value)">
+                  <button class="btn btn-outline-primary" type="button" onclick="iniciarEscannerCamara()"><i class="fas fa-camera"></i> Escanear</button>
+                </div>
+                <div id="reader" style="width: 100%; max-width: 400px; margin: 15px auto; display: none;"></div>
               </div>
               <div id="grid-productos" class="row g-3" style="max-height: 60vh; overflow-y: auto;"></div>
             </div>
@@ -115,25 +96,34 @@
           </div>
         </div>
 
-        <!-- INVENTARIO -->
+        <!-- INVENTARIO Y ETIQUETAS -->
         <div id="seccion-inventario" class="contenido-seccion" style="display: none;">
-          <h2 class="mb-3 text-primary"><i class="fas fa-box-open"></i> Gestión de Inventario</h2>
+          <h2 class="mb-3 text-primary"><i class="fas fa-box-open"></i> Gestión de Inventario y Códigos</h2>
+        <div class="mb-3 mt-3">
+  <input type="text" id="buscador-inventario" class="form-control" placeholder="🔍 Buscar producto por nombre o código..." onkeyup="filtrarInventario()">
+</div>
           <div class="card p-3 shadow-sm mb-3">
-            <h5>Registrar / Ingresar Producto Nuevo o Stock</h5>
+            <h5>Registrar o Sumar Stock con Código</h5>
             <div class="row g-2 mt-2">
-              <div class="col-md-2 mb-2"><input type="text" id="inv-codigo" class="form-control" placeholder="Código"></div>
-              <div class="col-md-3 mb-2"><input type="text" id="inv-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-2 mb-2">
+                <div class="input-group">
+                  <input type="text" id="inv-codigo" class="form-control" placeholder="Ej. ZTECH01">
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="generarCodigoAleatorio()" title="Generar código automático"><i class="fas fa-magic"></i></button>
+                </div>
+              </div>
+              <div class="col-md-3 mb-2"><input type="text" id="inv-nombre" class="form-control" placeholder="Nombre del Producto"></div>
               <div class="col-md-2 mb-2"><input type="number" id="inv-precio" class="form-control" placeholder="Precio ($)"></div>
-              <div class="col-md-2 mb-2"><input type="number" id="inv-stock" class="form-control" placeholder="Stock"></div>
-              <div class="col-md-3 mb-2"><button class="btn btn-primary w-100 fw-bold" onclick="agregarProducto()"><i class="fas fa-plus"></i> Guardar Producto</button></div>
+              <div class="col-md-2 mb-2"><input type="number" id="inv-stock" class="form-control" placeholder="Stock / Cantidad"></div>
+              <div class="col-md-3 mb-2"><button class="btn btn-primary w-100 fw-bold" onclick="agregarProducto()"><i class="fas fa-plus"></i> Guardar / Sumar</button></div>
             </div>
           </div>
+
           <div class="card p-3 shadow-sm">
-            <h5 class="mb-3">Control de Stock</h5>
+            <h5 class="mb-3">Control de Stock e Impresión de Etiquetas</h5>
             <div class="table-responsive">
               <table class="table table-hover align-middle">
                 <thead class="table-dark">
-                  <tr><th>Código</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acción</th></tr>
+                  <tr><th>Código</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="tabla-inventario-body"></tbody>
               </table>
@@ -147,7 +137,7 @@
           <div class="card p-3 shadow-sm mb-3">
             <h5>Agregar Proveedor</h5>
             <div class="row g-2 mt-2">
-              <div class="col-md-4 mb-2"><input type="text" id="prov-nombre" class="form-control" placeholder="Nombre"></div>
+              <div class="col-md-4 mb-2"><input type="text" id="prov-nombre" class="form-control" placeholder="Nombre / Empresa"></div>
               <div class="col-md-3 mb-2"><input type="text" id="prov-telefono" class="form-control" placeholder="Teléfono"></div>
               <div class="col-md-3 mb-2"><input type="text" id="prov-categoria" class="form-control" placeholder="Categoría"></div>
               <div class="col-md-2 mb-2"><button class="btn btn-primary w-100" onclick="agregarProveedor()"><i class="fas fa-plus"></i> Guardar</button></div>
@@ -178,7 +168,6 @@
             </div>
           </div>
 
-          <!-- TARJETAS DE RESUMEN -->
           <div class="row mb-4 g-3">
             <div class="col-md-4">
               <div class="card bg-success text-white p-3 shadow-sm">
@@ -200,7 +189,6 @@
             </div>
           </div>
 
-          <!-- REGISTRAR GASTO -->
           <div class="card p-3 shadow-sm mb-4">
             <h5>Registrar Gasto / Egreso</h5>
             <div class="row g-2 mt-2">
@@ -217,7 +205,6 @@
             </div>
           </div>
 
-          <!-- TABLAS DE HISTORIAL -->
           <div class="row g-3">
             <div class="col-md-6">
               <div class="card p-3 shadow-sm">
@@ -283,7 +270,7 @@
 
   <!-- IMPRESIÓN DE FACTURA -->
   <div id="area-impresion" style="display: none;">
-    <div style="width: 280mm; margin: 0 auto; font-family: monospace; font-size: 12px;">
+    <div style="width: 80mm; margin: 0 auto; font-family: monospace; font-size: 12px;">
       <h3 style="text-align: center; margin:0; font-size: 16px;">Z-TECH S&S</h3>
       <p style="text-align: center; font-size: 11px; margin:0;">Popayán, Cauca | Cel: 3124552588</p>
       <hr style="border-top: dashed 1px #000; margin: 5px 0;">
@@ -297,112 +284,63 @@
     </div>
   </div>
 
-  <!-- SCRIPT BOOTSTRAP JS Y LÓGICA -->
+  <!-- IMPRESIÓN DE ETIQUETA -->
+  <div id="area-etiqueta" style="display: none; text-align: center; padding: 10px;">
+    <h4 style="margin:0; font-size: 14px; font-weight:bold;">Z-TECH S&S</h4>
+    <p id="etiqueta-nombre" style="margin: 2px 0; font-size: 12px; font-weight: bold;"></p>
+    <svg id="barcode-element"></svg>
+    <p id="etiqueta-precio" style="margin: 2px 0; font-size: 14px; font-weight: bold;"></p>
+  </div>
+
+  <!-- SCRIPT -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+  function filtrarInventario() {
+  const textoBusqueda = document.getElementById('buscador-inventario').value.toLowerCase();
+  const filas = document.querySelectorAll('#tabla-inventario-body tr'); 
+
+  filas.forEach(fila => {
+    const codigo = fila.querySelector('.col-codigo')?.textContent.toLowerCase() || '';
+    const nombre = fila.querySelector('.col-nombre')?.textContent.toLowerCase() || '';
+    
+    if (codigo.includes(textoBusqueda) || nombre.includes(textoBusqueda)) {
+      fila.style.display = '';
+    } else {
+      fila.style.display = 'none';
+    }
+  });
+}
     const SUPABASE_URL = 'https://ntrmofcldtiewurqijrp.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_MQ3hJjQ4BSZ1tro1ybuhaw_IIET40ZD';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cm1vZmNsZHRpZXd1cnFpanJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzODQ2NDUsImV4cCI6MjEwMzk2MDY0NX0.5xCvoj_xsCL2hdyS8om1p5I5IWbzRemeUl4KAKMIypU';
     let supabaseClient = null;
 
     try {
       if (typeof supabase !== 'undefined') {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       }
-    } catch (e) {
-      console.error("Error Supabase:", e);
-    }
+    } catch (e) {}
 
-    let rolActual = '';
     let productosCache = [];
     let carrito = [];
     let ultimoTicket = null;
-    
-    let ventasMemoria = [
-      { TOTAL: 5000, PRODUCTO: 'SECADORA', MEDIO_PAGO: 'Efectivo', created_at: '2026-09-10 16:57:54' },
-      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Efectivo', created_at: '2026-09-10 16:58:57' },
-      { TOTAL: 60000, PRODUCTO: 'ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-09-10 17:06:58' },
-      { TOTAL: 60000, PRODUCTO: 'ROKOLA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-09-10 17:07:09' },
-      { TOTAL: 5000, PRODUCTO: 'SECADORA', MEDIO_PAGO: 'Daviplata', created_at: '2026-09-10 17:08:49' },
-      { TOTAL: 120000, PRODUCTO: '2x ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-10-11 12:25:28' },
-      { TOTAL: 120000, PRODUCTO: '2x ROKOLA', MEDIO_PAGO: 'Nequi', created_at: '2026-10-11 12:25:35' },
-      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-10-11 14:11:20' },
-      { TOTAL: 50000, PRODUCTO: 'CABINA', MEDIO_PAGO: 'Bancolombia', created_at: '2026-10-11 14:11:45' },
-      { TOTAL: 20000, PRODUCTO: '4x SECADORA', MEDIO_PAGO: 'Transferencia', created_at: '2026-10-11 14:14:20' },
-      { TOTAL: 75000, PRODUCTO: 'MOTUL 7100', MEDIO_PAGO: 'Efectivo', created_at: '2026-10-11 15:23:57' },
-      { TOTAL: 500000, PRODUCTO: '10x CABINA', MEDIO_PAGO: 'Efectivo', created_at: '2026-10-30 10:00:00' }
-    ];
-
-    let gastosMemoria = [
-      { CONCEPTO: 'ALMUERZO', MONTO: 12000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-11 15:16:30' },
-      { CONCEPTO: 'ARRIENDO', MONTO: 300000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-11 15:16:30' },
-      { CONCEPTO: 'DESAYUNO', MONTO: 90000, MEDIO_PAGO: 'Nequi', created_at: '2026-09-21 14:43:44' },
-      { CONCEPTO: 'DESAYUNO', MONTO: 5000, MEDIO_PAGO: 'Efectivo', created_at: '2026-09-22 12:22:21' },
-      { CONCEPTO: 'DESAYUNO', MONTO: 4000, MEDIO_PAGO: 'Efectivo', created_at: '2026-10-08 12:40:23' },
-      { CONCEPTO: 'TRANSPORTE', MONTO: 5000, MEDIO_PAGO: 'Efectivo', created_at: '2026-10-30 08:30:00' }
-    ];
-
-    let proveedoresMemoria = [
-      { id: 1, NOMBRE: 'JAPANI', TELEFONO: '3101234567', CATEGORIA: 'REPUESTOS' },
-      { id: 2, NOMBRE: 'STEVE MOTORS', TELEFONO: '3159876543', CATEGORIA: 'BATERÍAS' },
-      { id: 3, NOMBRE: 'NIPPON POWER', TELEFONO: '3205554433', CATEGORIA: 'ACCESORIOS' }
-    ];
-
-    function autenticarFuerza() {
-      const pinInput = document.getElementById('pin-input');
-      const errorLabel = document.getElementById('error-login');
-      if (!pinInput) return;
-      
-      const pin = pinInput.value.trim();
-      
-      if (pin === '1234' || pin === '0000') {
-        rolActual = pin === '1234' ? 'admin' : 'vendedor';
-        const roleLabel = document.getElementById('user-role-label');
-        if (roleLabel) roleLabel.innerText = 'Rol: ' + (rolActual === 'admin' ? 'Administrador' : 'Vendedor');
-        
-        const overlay = document.getElementById('login-overlay');
-        const container = document.getElementById('app-container');
-        if (overlay) overlay.style.display = 'none';
-        if (container) container.style.display = 'block';
-        
-        iniciarApp();
-      } else {
-        if (errorLabel) {
-          errorLabel.innerText = 'PIN incorrecto. Usa 1234 o 0000';
-          errorLabel.style.display = 'block';
-        }
-      }
-    }
+    let html5QrCode = null;
+    let ventasMemoria = [];
+    let gastosMemoria = [];
+    let proveedoresMemoria = [];
 
     window.addEventListener('DOMContentLoaded', () => {
-      const pinInputEl = document.getElementById('pin-input');
-      if (pinInputEl) {
-        pinInputEl.focus();
-        pinInputEl.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') autenticarFuerza();
-        });
-      }
-
-      const btnLogin = document.getElementById('btn-login');
-      if (btnLogin) {
-        btnLogin.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          autenticarFuerza();
-        });
-      }
-
+      iniciarApp();
       const inputBusqueda = document.getElementById('busqueda-pos');
       if (inputBusqueda) {
         inputBusqueda.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
-            const codigoBuscado = this.value.trim().toUpperCase();
-            const prod = productosCache.find(p => (p.CODIGO && p.CODIGO.toUpperCase() === codigoBuscado) || p.id == codigoBuscado);
+            const codigoBuscado = this.value.trim().toLowerCase();
+            const prod = productosCache.find(p => (p.codigo && p.codigo.toLowerCase() === codigoBuscado) || p.id == codigoBuscado || (p.nombre && p.nombre.toLowerCase().includes(codigoBuscado)));
             if (prod) {
               agregarAlCarrito(prod.id);
               this.value = '';
             } else {
-              if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Código no existe', timer: 1500, showConfirmButton: false });
-              }
+              Swal.fire({ icon: 'warning', title: 'No encontrado', text: 'Producto o código no existe', timer: 1500, showConfirmButton: false });
             }
           }
         });
@@ -416,15 +354,11 @@
       document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
       if (elNav) elNav.classList.add('active');
 
-      // Si estamos en celular, cerrar el menú desplegable automáticamente al elegir una opción
-      const sidebarMenu = document.getElementById('sidebarMenu');
-      if (sidebarMenu && sidebarMenu.classList.contains('show')) {
-        const bsCollapse = bootstrap.Collapse.getInstance(sidebarMenu);
-        if (bsCollapse) bsCollapse.hide();
+      if (html5QrCode && idSeccion !== 'seccion-pos') {
+        html5QrCode.stop().catch(() => {});
+        document.getElementById('reader').style.display = 'none';
       }
     }
-
-    function cerrarSesion() { location.reload(); }
 
     async function iniciarApp() {
       await cargarProductos();
@@ -436,11 +370,10 @@
     async function sincronizarDatosNube() {
       if (supabaseClient) {
         try {
-          const resV = await supabaseClient.from('VENTAS').select('*');
-          if (resV.data && resV.data.length > 0) ventasMemoria = resV.data;
-          
-          const resG = await supabaseClient.from('GASTOS').select('*');
-          if (resG.data && resG.data.length > 0) gastosMemoria = resG.data;
+          const resV = await supabaseClient.from('ventas').select('*');
+          if (resV.data) ventasMemoria = resV.data;
+          const resG = await supabaseClient.from('gastos').select('*');
+          if (resG.data) gastosMemoria = resG.data;
         } catch (e) {}
       }
     }
@@ -448,8 +381,8 @@
     async function cargarProductos() {
       if (supabaseClient) {
         try {
-          const { data, error } = await supabaseClient.from('PRODUCTOS').select('*');
-          if (!error && data && data.length > 0) {
+          const { data, error } = await supabaseClient.from('productos').select('*');
+          if (!error && data) {
             productosCache = data;
             renderizarPOS(productosCache);
             renderizarInventario(productosCache);
@@ -457,13 +390,6 @@
           }
         } catch (e) {}
       }
-      productosCache = [
-        { id: 4, NOMBRE: 'CABINA', PRECIO: 50000, STOCK: 38, CODIGO: 'EMPTY' },
-        { id: 5, NOMBRE: 'ROKOLA', PRECIO: 60000, STOCK: 29, CODIGO: 'ROK1' },
-        { id: 6, NOMBRE: 'SECADORA', PRECIO: 5000, STOCK: 3, CODIGO: 'EMPTY' },
-        { id: 7, NOMBRE: 'MOTUL 5100', PRECIO: 50000, STOCK: 4, CODIGO: 'AC-MOT' },
-        { id: 8, NOMBRE: 'MOTUL 7100', PRECIO: 75000, STOCK: 8, CODIGO: 'ACEITE' }
-      ];
       renderizarPOS(productosCache);
       renderizarInventario(productosCache);
     }
@@ -473,13 +399,14 @@
       if (!grid) return;
       grid.innerHTML = '';
       prods.forEach(p => {
-        let badgeStock = p.STOCK <= 3 ? `<span class="badge bg-danger float-end">¡Bajo stock: ${p.STOCK}!</span>` : `<span class="badge bg-light text-secondary float-end">Stock: ${p.STOCK}</span>`;
+        let stockVal = p.stock !== undefined ? p.stock : 0;
+        let badgeStock = stockVal <= 3 ? `<span class="badge bg-danger float-end">¡Bajo: ${stockVal}!</span>` : `<span class="badge bg-light text-secondary float-end">Stock: ${stockVal}</span>`;
         grid.innerHTML += `
           <div class="col-md-4 col-6">
             <div class="card p-3 shadow-sm h-100" style="cursor: pointer;" onclick="agregarAlCarrito(${p.id})">
-              <h6 class="fw-bold text-dark">${p.NOMBRE}</h6>
-              <p class="text-muted small m-0">Código: ${p.CODIGO || 'S/C'}</p>
-              <p class="text-success fw-bold mt-2 m-0">$${Number(p.PRECIO).toLocaleString()} ${badgeStock}</p>
+              <h6 class="fw-bold text-dark">${p.nombre || 'Sin Nombre'}</h6>
+              <p class="text-muted small m-0">Código: ${p.codigo || 'S/C'}</p>
+              <p class="text-success fw-bold mt-2 m-0">$${Number(p.precio || 0).toLocaleString()} ${badgeStock}</p>
             </div>
           </div>
         `;
@@ -488,8 +415,51 @@
 
     function filtrarPOS(texto) {
       const filtro = texto.toLowerCase();
-      const filtrados = productosCache.filter(p => p.NOMBRE.toLowerCase().includes(filtro) || (p.CODIGO && p.CODIGO.toLowerCase().includes(filtro)));
+      const filtrados = productosCache.filter(p => (p.nombre && p.nombre.toLowerCase().includes(filtro)) || (p.codigo && p.codigo.toLowerCase().includes(filtro)));
       renderizarPOS(filtrados);
+    }
+
+    function iniciarEscannerCamara() {
+      const readerDiv = document.getElementById('reader');
+      if (readerDiv.style.display === 'block') {
+        readerDiv.style.display = 'none';
+        if (html5QrCode) html5QrCode.stop().catch(() => {});
+        return;
+      }
+      readerDiv.style.display = 'block';
+      if (!html5QrCode) { html5QrCode = new Html5Qrcode("reader"); }
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+          document.getElementById('busqueda-pos').value = decodedText;
+          filtrarPOS(decodedText);
+          const prod = productosCache.find(p => (p.codigo && p.codigo.toLowerCase() === decodedText.toLowerCase()) || p.id == decodedText);
+          if (prod) { agregarAlCarrito(prod.id); document.getElementById('busqueda-pos').value = ''; }
+          html5QrCode.stop().catch(() => {});
+          readerDiv.style.display = 'none';
+        },
+        (errorMessage) => {}
+      ).catch(err => { readerDiv.style.display = 'none'; });
+    }
+
+    function generarCodigoAleatorio() {
+      const aleatorio = 'ZTECH-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('inv-codigo').value = aleatorio;
+    }
+
+    function imprimirEtiquetaCodigo(codigo, nombre, precio) {
+      document.getElementById('etiqueta-nombre').innerText = nombre;
+      document.getElementById('etiqueta-precio').innerText = `$${Number(precio).toLocaleString()}`;
+      try {
+        JsBarcode("#barcode-element", codigo || "ZTECH-000", { format: "CODE128", width: 2, height: 50, displayValue: true });
+      } catch(e) {}
+      const areaEtiqueta = document.getElementById('area-etiqueta');
+      areaEtiqueta.style.display = 'block';
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => { areaEtiqueta.style.display = 'none'; }, 500);
+      }, 200);
     }
 
     function renderizarInventario(prods) {
@@ -497,15 +467,17 @@
       if (!tbody) return;
       tbody.innerHTML = '';
       prods.forEach(p => {
-        let stockBadge = p.STOCK <= 3 ? `<span class="badge bg-danger fw-bold">${p.STOCK} (¡ALERTA!)</span>` : `<span class="badge bg-secondary">${p.STOCK}</span>`;
+        let stockVal = p.stock !== undefined ? p.stock : 0;
+        let stockBadge = stockVal <= 3 ? `<span class="badge bg-danger fw-bold">${stockVal} (¡ALERTA!)</span>` : `<span class="badge bg-secondary">${stockVal}</span>`;
         tbody.innerHTML += `
           <tr>
-            <td>${p.CODIGO || '-'}</td>
-            <td><strong>${p.NOMBRE}</strong></td>
-            <td>$${Number(p.PRECIO).toLocaleString()}</td>
+            <td><code>${p.codigo || 'S/C'}</code></td>
+            <td><strong>${p.nombre || 'Sin Nombre'}</strong></td>
+            <td>$${Number(p.precio || 0).toLocaleString()}</td>
             <td>${stockBadge}</td>
             <td>
-              <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id})">Eliminar</button>
+              <button class="btn btn-sm btn-outline-primary mb-1" onclick="imprimirEtiquetaCodigo('${p.codigo || 'ZTECH'}', '${p.nombre}', ${p.precio})"><i class="fas fa-barcode"></i> Etiqueta</button>
+              <button class="btn btn-sm btn-danger mb-1" onclick="eliminarProducto(${p.id})">Eliminar</button>
             </td>
           </tr>
         `;
@@ -513,22 +485,42 @@
     }
 
     async function agregarProducto() {
-      const CODIGO = document.getElementById('inv-codigo').value.trim().toUpperCase();
-      const NOMBRE = document.getElementById('inv-nombre').value.trim().toUpperCase();
-      const PRECIO = parseFloat(document.getElementById('inv-precio').value);
-      const STOCK = parseInt(document.getElementById('inv-stock').value);
+      const codigo = document.getElementById('inv-codigo').value.trim() || ('ZTECH-' + Math.floor(1000 + Math.random() * 9000));
+      const nombre = document.getElementById('inv-nombre').value.trim().toUpperCase();
+      const precio = parseFloat(document.getElementById('inv-precio').value);
+      const stockIngreso = parseInt(document.getElementById('inv-stock').value);
 
-      if (!NOMBRE || isNaN(PRECIO) || isNaN(STOCK)) {
-        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Complete los campos obligatorios', 'warning');
+      if (!nombre || isNaN(precio) || isNaN(stockIngreso)) {
+        Swal.fire('Error', 'Complete los campos obligatorios', 'warning');
         return;
       }
 
-      if (supabaseClient) {
-        try { await supabaseClient.from('PRODUCTOS').insert([{ NOMBRE, CODIGO, PRECIO, STOCK }]); } catch(e){}
+      let productoExistente = productosCache.find(p => p.codigo && p.codigo.toLowerCase() === codigo.toLowerCase());
+
+      if (productoExistente) {
+        productoExistente.stock = (productoExistente.stock || 0) + stockIngreso;
+        productoExistente.precio = precio;
+        productoExistente.nombre = nombre;
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('productos')
+              .update({ stock: productoExistente.stock, precio: precio, nombre: nombre })
+              .eq('id', productoExistente.id);
+          } catch(e){}
+        }
+        Swal.fire('¡Stock Actualizado!', `Se sumaron ${stockIngreso} unidades. Stock total: ${productoExistente.stock}`, 'success');
+      } else {
+        const nuevoId = Date.now();
+        if (supabaseClient) {
+          try { 
+            await supabaseClient.from('productos').insert([{ id: nuevoId, nombre, codigo, precio, stock: stockIngreso }]); 
+          } catch(e){}
+        }
+        productosCache.push({ id: nuevoId, nombre, codigo, precio, stock: stockIngreso });
+        Swal.fire('Guardado', 'Nuevo producto y código registrado', 'success');
       }
-      
-      productosCache.push({ id: Date.now(), NOMBRE, CODIGO, PRECIO, STOCK });
-      if (typeof Swal !== 'undefined') Swal.fire('Guardado', 'Producto agregado exitosamente', 'success');
+
       document.getElementById('inv-codigo').value = '';
       document.getElementById('inv-nombre').value = '';
       document.getElementById('inv-precio').value = '';
@@ -538,38 +530,25 @@
     }
 
     async function eliminarProducto(id) {
-      let confirmado = true;
-      if (typeof Swal !== 'undefined') {
-        const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
-        confirmado = res.isConfirmed;
-      } else {
-        confirmado = confirm('¿Eliminar producto?');
-      }
-
-      if (confirmado) {
+      const res = await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true });
+      if (res.isConfirmed) {
         if (supabaseClient) {
-          try { await supabaseClient.from('PRODUCTOS').delete().eq('id', id); } catch(e){}
+          try { await supabaseClient.from('productos').delete().eq('id', id); } catch(e){}
         }
         productosCache = productosCache.filter(p => p.id !== id);
         renderizarPOS(productosCache);
         renderizarInventario(productosCache);
-        if (typeof Swal !== 'undefined') Swal.fire('Eliminado', '', 'success');
+        Swal.fire('Eliminado', '', 'success');
       }
     }
 
     function agregarAlCarrito(id) {
       const p = productosCache.find(x => x.id === id);
-      if (!p || p.STOCK <= 0) {
-        if (typeof Swal !== 'undefined') Swal.fire('Sin stock', 'Unidades agotadas', 'error');
-        return;
-      }
+      let stockVal = p && p.stock !== undefined ? p.stock : 0;
+      if (!p || stockVal <= 0) { Swal.fire('Sin stock', 'Unidades agotadas', 'error'); return; }
       let item = carrito.find(x => x.id === id);
-      if (item) {
-        if (item.cantidad < p.STOCK) item.cantidad++;
-        else return;
-      } else {
-        carrito.push({ ...p, cantidad: 1 });
-      }
+      if (item) { if (item.cantidad < stockVal) item.cantidad++; } 
+      else { carrito.push({ ...p, cantidad: 1 }); }
       renderizarCarrito();
     }
 
@@ -585,10 +564,10 @@
       lista.innerHTML = '';
       let total = 0;
       carrito.forEach((item, idx) => {
-        total += item.PRECIO * item.cantidad;
+        total += (item.precio || 0) * item.cantidad;
         lista.innerHTML += `
           <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-            <div><strong>${item.NOMBRE}</strong><br><small>$${Number(item.PRECIO).toLocaleString()} x ${item.cantidad}</small></div>
+            <div><strong>${item.nombre}</strong><br><small>$${Number(item.precio || 0).toLocaleString()} x ${item.cantidad}</small></div>
             <div>
               <button class="btn btn-sm btn-outline-danger" onclick="cambiarCant(${idx}, -1)">-</button>
               <button class="btn btn-sm btn-outline-success" onclick="cambiarCant(${idx}, 1)">+</button>
@@ -606,32 +585,22 @@
     }
 
     async function procesarVentaSupabase() {
-      if (carrito.length === 0) {
-        if (typeof Swal !== 'undefined') Swal.fire('Vacío', 'Agregue productos al carrito', 'warning');
-        return;
-      }
-      const MEDIO_PAGO = document.getElementById('metodo-pago').value;
-      const totalVenta = carrito.reduce((acc, i) => acc + (i.PRECIO * i.cantidad), 0);
-      const nombresProductos = carrito.map(i => `${i.cantidad}x ${i.NOMBRE}`).join(', ');
+      if (carrito.length === 0) { Swal.fire('Vacío', 'Agregue productos', 'warning'); return; }
+      const medio_pago = document.getElementById('metodo-pago').value;
+      const totalVenta = carrito.reduce((acc, i) => acc + ((i.precio || 0) * i.cantidad), 0);
+      const productoStr = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('VENTAS').insert([{
-            PRODUCTO: nombresProductos,
-            CANTIDAD: 1,
-            TOTAL: totalVenta,
-            MEDIO_PAGO: MEDIO_PAGO
-          }]);
+          await supabaseClient.from('ventas').insert([{ producto: productoStr, cantidad: 1, total: totalVenta, medio_pago: medio_pago }]);
         } catch (e) {}
       }
-
-      ventasMemoria.push({ TOTAL: totalVenta, PRODUCTO: nombresProductos, MEDIO_PAGO: MEDIO_PAGO, created_at: new Date().toISOString() });
-
-      ultimoTicket = { fecha: new Date().toLocaleString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }), metodo: MEDIO_PAGO, items: [...carrito], total: totalVenta };
+      ventasMemoria.push({ total: totalVenta, producto: productoStr, medio_pago: medio_pago, created_at: new Date().toISOString() });
+      ultimoTicket = { fecha: new Date().toLocaleString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }), metodo: medio_pago, items: [...carrito], total: totalVenta };
       
       carrito.forEach(item => {
         const prod = productosCache.find(p => p.id === item.id);
-        if (prod) prod.STOCK -= item.cantidad;
+        if (prod) prod.stock -= item.cantidad;
       });
 
       carrito = [];
@@ -639,7 +608,6 @@
       renderizarPOS(productosCache);
       renderizarInventario(productosCache);
       calcularCierreCaja();
-
       imprimirUltimaFactura();
     }
 
@@ -650,27 +618,20 @@
       document.getElementById('print-total').innerText = `$${ultimoTicket.total.toLocaleString()}`;
       let itemsH = '';
       ultimoTicket.items.forEach(i => {
-        itemsH += `<div style="display:flex; justify-content:space-between; margin: 2px 0;"><span>${i.cantidad}x ${i.NOMBRE}</span><span>$${(i.PRECIO * i.cantidad).toLocaleString()}</span></div>`;
+        itemsH += `<div style="display:flex; justify-content:space-between; margin: 2px 0;"><span>${i.cantidad}x ${i.nombre}</span><span>$${((i.precio || 0) * i.cantidad).toLocaleString()}</span></div>`;
       });
       document.getElementById('print-items').innerHTML = itemsH;
-
       const areaImpresion = document.getElementById('area-impresion');
       areaImpresion.style.display = 'block';
-      
       setTimeout(() => {
         window.print();
-        setTimeout(() => { 
-          areaImpresion.style.display = 'none'; 
-        }, 500);
+        setTimeout(() => { areaImpresion.style.display = 'none'; }, 500);
       }, 200);
     }
 
     async function cargarProveedores() {
       if (supabaseClient) {
-        try {
-          const { data } = await supabaseClient.from('PROVEEDORES').select('*');
-          if (data && data.length > 0) proveedoresMemoria = data;
-        } catch (e) {}
+        try { const { data } = await supabaseClient.from('proveedores').select('*'); if (data) proveedoresMemoria = data; } catch (e) {}
       }
       renderizarProveedores();
     }
@@ -682,9 +643,9 @@
       proveedoresMemoria.forEach(prov => {
         tbody.innerHTML += `
           <tr>
-            <td><strong>${prov.NOMBRE}</strong></td>
-            <td><i class="fas fa-phone-alt me-1"></i> ${prov.TELEFONO}</td>
-            <td><span class="badge bg-info text-dark">${prov.CATEGORIA || 'General'}</span></td>
+            <td><strong>${prov.nombre}</strong></td>
+            <td><i class="fas fa-phone-alt me-1"></i> ${prov.telefono}</td>
+            <td><span class="badge bg-info text-dark">${prov.categoria || 'General'}</span></td>
             <td><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(${prov.id})">Eliminar</button></td>
           </tr>
         `;
@@ -692,19 +653,16 @@
     }
 
     async function agregarProveedor() {
-      const NOMBRE = document.getElementById('prov-nombre').value.trim().toUpperCase();
-      const TELEFONO = document.getElementById('prov-telefono').value.trim();
-      const CATEGORIA = document.getElementById('prov-categoria').value.trim().toUpperCase();
-      if (!NOMBRE || !TELEFONO) {
-        if (typeof Swal !== 'undefined') Swal.fire('Error', 'Ingrese nombre y teléfono', 'warning');
-        return;
-      }
+      const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
+      const telefono = document.getElementById('prov-telefono').value.trim();
+      const categoria = document.getElementById('prov-categoria').value.trim().toUpperCase();
+      if (!nombre || !telefono) { Swal.fire('Error', 'Ingrese nombre y teléfono', 'warning'); return; }
       if (supabaseClient) {
-        try { await supabaseClient.from('PROVEEDORES').insert([{ NOMBRE, TELEFONO, CATEGORIA }]); } catch(e){}
+        try { await supabaseClient.from('proveedores').insert([{ nombre, telefono, categoria }]); } catch(e){}
       }
-      proveedoresMemoria.push({ id: Date.now(), NOMBRE, TELEFONO, CATEGORIA });
+      proveedoresMemoria.push({ id: Date.now(), nombre, telefono, categoria });
       renderizarProveedores();
-      if (typeof Swal !== 'undefined') Swal.fire('Éxito', 'Proveedor agregado', 'success');
+      Swal.fire('Éxito', 'Proveedor agregado', 'success');
       document.getElementById('prov-nombre').value = '';
       document.getElementById('prov-telefono').value = '';
       document.getElementById('prov-categoria').value = '';
@@ -712,25 +670,18 @@
 
     async function eliminarProveedor(id) {
       if (supabaseClient) {
-        try { await supabaseClient.from('PROVEEDORES').delete().eq('id', id); } catch(e){}
+        try { await supabaseClient.from('proveedores').delete().eq('id', id); } catch(e){}
       }
       proveedoresMemoria = proveedoresMemoria.filter(p => p.id !== id);
       renderizarProveedores();
-      if (typeof Swal !== 'undefined') Swal.fire('Eliminado', '', 'success');
+      Swal.fire('Eliminado', '', 'success');
     }
 
     function formatearFechaHora(fechaStr) {
       if (!fechaStr) return 'Reciente';
       const fecha = new Date(fechaStr);
       if (isNaN(fecha)) return fechaStr;
-      return fecha.toLocaleString('es-CO', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
-      });
+      return fecha.toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
     function calcularCierreCaja() {
@@ -755,13 +706,74 @@
       });
 
       let totalV = 0;
-      ventasFiltradas.forEach(v => totalV += Number(v.TOTAL));
-
+      ventasFiltradas.forEach(v => totalV += Number(v.total || 0));
       let totalG = 0;
-      gastosFiltrados.forEach(g => totalG += Number(g.MONTO));
+      gastosFiltrados.forEach(g => totalG += Number(g.monto || 0));
 
       const balanceNeto = totalV - totalG;
-
       document.getElementById('resumen-ventas').innerText = `$${totalV.toLocaleString()}`;
       document.getElementById('resumen-gastos').innerText = `$${totalG.toLocaleString()}`;
-      const balanceEl
+      const balanceEl = document.getElementById('resumen-balance');
+      balanceEl.innerText = `$${balanceNeto.toLocaleString()}`;
+      balanceEl.className = balanceNeto >= 0 ? 'text-white' : 'text-warning';
+
+      renderizarTablasHistorial(ventasFiltradas, gastosFiltrados);
+    }
+
+    function renderizarTablasHistorial(ventas, gastos) {
+      const tbodyV = document.getElementById('tabla-ventas-body');
+      if (tbodyV) {
+        tbodyV.innerHTML = '';
+        if (ventas.length === 0) {
+          tbodyV.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin ventas en este período</td></tr>';
+        } else {
+          ventas.slice().reverse().forEach(v => {
+            tbodyV.innerHTML += `
+              <tr>
+                <td><small>${formatearFechaHora(v.created_at)}</small></td>
+                <td><strong>${v.producto || 'Venta POS'}</strong></td>
+                <td>${v.medio_pago || 'Efectivo'}</td>
+                <td class="text-success fw-bold">+$${Number(v.total || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          });
+        }
+      }
+
+      const tbodyG = document.getElementById('tabla-gastos-body');
+      if (tbodyG) {
+        tbodyG.innerHTML = '';
+        if (gastos.length === 0) {
+          tbodyG.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin egresos en este período</td></tr>';
+        } else {
+          gastos.slice().reverse().forEach(g => {
+            tbodyG.innerHTML += `
+              <tr>
+                <td><small>${formatearFechaHora(g.created_at)}</small></td>
+                <td><strong>${g.concepto}</strong></td>
+                <td>${g.medio_pago || 'Efectivo'}</td>
+                <td class="text-danger fw-bold">-$${Number(g.monto || 0).toLocaleString()}</td>
+              </tr>
+            `;
+          });
+        }
+      }
+    }
+
+    async function registrarGasto() {
+      const concepto = document.getElementById('gasto-concepto').value.trim().toUpperCase();
+      const monto = parseFloat(document.getElementById('gasto-monto').value);
+      const medio_pago = document.getElementById('gasto-pago').value;
+      if (!concepto || isNaN(monto)) { Swal.fire('Error', 'Complete los datos del gasto', 'warning'); return; }
+      if (supabaseClient) {
+        try { await supabaseClient.from('gastos').insert([{ concepto, monto, medio_pago }]); } catch (e) {}
+      }
+      gastosMemoria.push({ created_at: new Date().toISOString(), concepto, monto, medio_pago });
+      calcularCierreCaja();
+      Swal.fire('Registrado', 'Gasto guardado', 'success');
+      document.getElementById('gasto-concepto').value = '';
+      document.getElementById('gasto-monto').value = '';
+    }
+  </script>
+</body>
+</html>
