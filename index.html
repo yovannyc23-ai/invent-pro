@@ -17,18 +17,25 @@
     .nav-link { color: #94a3b8; cursor: pointer; }
     .nav-link.active, .nav-link:hover { color: white; background: #0284c7; border-radius: 8px; }
     
-  @media print {
-      body * { visibility: hidden !important; }
-      #area-impresion, #area-impresion * { visibility: visible !important; }
-      #area-impresion {
-        position: absolute !important; left: 0; top: 0; width: 80mm; margin: 0; padding: 2mm; background: white; display: block;
-      }
-      #area-etiqueta, #area-etiqueta * { visibility: visible !important; }
-      #area-etiqueta {
-        position: absolute !important; left: 0; top: 0; width: 78mm !important; max-height: 45mm !important; background: white; display: block !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important;
-      }
-      @page { size: 80mm auto; margin: 0mm; }
+ @media print {
+    body * { visibility: hidden !important; }
+    #area-impresion, #area-impresion * { visibility: visible !important; }
+    #area-impresion {
+        position: absolute !important; 
+        left: 0 !important; 
+        top: 0 !important; 
+        width: 80mm !important; 
+        max-width: 80mm !important;
+        margin: 0 !important; 
+        padding: 5mm !important; 
+        background: white !important;
+        display: block !important;
     }
+    @page {
+        size: 80mm auto;
+        margin: 0mm;
+    }
+}
   </style>
 </head>
 <body>
@@ -283,6 +290,22 @@
       <p style="text-align: center; font-size: 10px; margin-top: 10px;">¡Gracias por su compra en Z-Tech S&S!</p>
     </div>
   </div>
+ 
+<script>
+function enviarFacturaWhatsApp() {
+    const telefono = document.getElementById('clienteTelefono').value.trim();
+    if (!telefono) {
+        alert('Por favor ingresa el número de WhatsApp del cliente.');
+        return;
+    }
+
+    const mensaje = `¡Hola! Gracias por tu compra en Z-Tech S&S. Te esperamos pronto en nuestro local de Barrio La Esmeralda.`;
+    const numeroLimpio = telefono.startsWith('57') ? telefono : '57' + telefono;
+    const urlWp = `https://api.whatsapp.com/send?phone=${numeroLimpio}&text=${encodeURIComponent(mensaje)}`;
+    
+    window.open(urlWp, '_blank');
+}
+</script>
 
   <!-- IMPRESIÓN DE ETIQUETA -->
   <div id="area-etiqueta" style="display: none; text-align: center; padding: 10px;">
@@ -650,7 +673,48 @@
         `;
       });
     }
+// Función para ver e imprimir una factura pasada desde el Historial de Ventas
+function reimprimirFacturaHistorial(fecha, producto, medioPago, total) {
+    // Limpiamos y formateamos la fecha para que se vea profesional
+    let fechaFormateada = fecha;
+    if (fecha) {
+        const d = new Date(fecha);
+        if (!isNaN(d)) {
+            const anio = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+          const horaFormateada = d.toLocaleTimeString('es-CO', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: true 
+            });
+            fechaFormateada = `${dia}/${mes}/${anio} - ${horaFormateada}`;
+        }
+    }
 
+    const areaImpresion = document.getElementById('area-impresion');
+    if (areaImpresion) {
+        areaImpresion.innerHTML = `
+            <div style="font-family: monospace; font-size: 11px; width: 100%; color: black; padding: 0;">
+                <div style="text-align: center;">
+                    <b>Z-TECH S&S</b><br>
+                    Comercializadora y Servicios
+                </div>
+                <hr style="border: dashed 1px black;">
+                <div><b>Fecha:</b> ${fechaFormateada}</div>
+                <div><b>Producto:</b> ${producto}</div>
+                <div><b>Medio Pago:</b> ${medioPago}</div>
+                <hr style="border: dashed 1px black;">
+                <div style="text-align: right; font-size: 13px;"><b>Total: $${Number(total || 0).toLocaleString()}</b></div>
+                <hr style="border: dashed 1px black;">
+                <div style="text-align: center;">¡Gracias por su compra!</div>
+            </div>
+        `;
+    }
+    setTimeout(() => {
+        window.print();
+    }, 250);
+}
     async function agregarProveedor() {
       const nombre = document.getElementById('prov-nombre').value.trim().toUpperCase();
       const telefono = document.getElementById('prov-telefono').value.trim();
@@ -724,18 +788,19 @@
       if (tbodyV) {
         tbodyV.innerHTML = '';
         if (ventas.length === 0) {
-          tbodyV.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin ventas en este período</td></tr>';
+          tbodyV.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin ventas en este período</td></tr>';
         } else {
-          ventas.slice().reverse().forEach(v => {
-            tbodyV.innerHTML += `
-              <tr>
+        ventas.slice().reverse().forEach(v => {
+        tbodyV.innerHTML += `
+            <tr>
                 <td><small>${formatearFechaHora(v.created_at)}</small></td>
                 <td><strong>${v.producto || 'Venta POS'}</strong></td>
                 <td>${v.medio_pago || 'Efectivo'}</td>
                 <td class="text-success fw-bold">+$${Number(v.total || 0).toLocaleString()}</td>
-              </tr>
-            `;
-          });
+                <td><button class="btn btn-sm btn-outline-primary" onclick="reimprimirFacturaHistorial('${v.created_at || ''}', '${v.producto || ''}', '${v.medio_pago || ''}', '${v.total || 0}')"><i class="fas fa-file-alt"></i> Ver</button></td>
+            </tr>
+        `;
+    });
         }
       }
 
