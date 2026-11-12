@@ -96,7 +96,7 @@
                   <option value="Bancolombia A la Mano">Bancolombia A la Mano</option>
                   <option value="Daviplata">Daviplata</option>
                 </select>
-                <button class="btn btn-success w-100 py-2 fw-bold mb-2" onclick="procesarVentaSupabase()"><i class="fas fa-check-circle me-1"></i> Cobrar y Facturar</button>
+                <button class="btn btn-success w-100 py-2 fw-bold mb-2" onclick="procesarVentaSupabase(event)"><i class="fas fa-check-circle me-1"></i> Cobrar y Facturar</button>
                 <button class="btn btn-outline-secondary w-100 btn-sm" onclick="imprimirUltimaFactura()"><i class="fas fa-print me-1"></i> Imprimir Tiquete</button>
               </div>
             </div>
@@ -279,7 +279,7 @@
   <div id="area-impresion" style="display: none;">
     <div style="width: 80mm; margin: 0 auto; font-family: monospace; font-size: 12px;">
       <h3 style="text-align: center; margin:0; font-size: 16px;">Z-TECH S&S</h3>
-      <p style="text-align: center; font-size: 11px; margin:0;">Popayán, Cauca | Cel: 3124552588</p>
+      <p style="text-align: center; font-size: 11px; margin:0;">Popayán, Cauca | Cel: 3165493292</p>
       <hr style="border-top: dashed 1px #000; margin: 5px 0;">
       <p style="margin: 2px 0;"><strong>Fecha:</strong> <span id="print-fecha"></span></p>
       <p style="margin: 2px 0;"><strong>Pago:</strong> <span id="print-metodo"></span></p>
@@ -574,82 +574,133 @@ function enviarFacturaWhatsApp() {
       renderizarCarrito();
     }
 
-    function renderizarCarrito() {
-      const lista = document.getElementById('lista-carrito');
-      const totalEl = document.getElementById('total-carrito');
-      if (!lista || !totalEl) return;
-      if (carrito.length === 0) {
+  function renderizarCarrito() {
+    const lista = document.getElementById('lista-carrito');
+    const totalEl = document.getElementById('total-carrito');
+    if (!lista || !totalEl) return;
+    if (carrito.length === 0) {
         lista.innerHTML = '<p class="text-muted text-center">Carrito vacío</p>';
         totalEl.innerText = '$0';
         return;
-      }
-      lista.innerHTML = '';
-      let total = 0;
-      carrito.forEach((item, idx) => {
+    }
+    lista.innerHTML = '';
+    let total = 0;
+    carrito.forEach((item, idx) => {
         total += (item.precio || 0) * item.cantidad;
         lista.innerHTML += `
-          <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-            <div><strong>${item.nombre}</strong><br><small>$${Number(item.precio || 0).toLocaleString()} x ${item.cantidad}</small></div>
-            <div>
-              <button class="btn btn-sm btn-outline-danger" onclick="cambiarCant(${idx}, -1)">-</button>
-              <button class="btn btn-sm btn-outline-success" onclick="cambiarCant(${idx}, 1)">+</button>
+            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                <div><strong>${item.nombre}</strong><br><small>$<input type="number" value="${item.precio || 0}" style="width: 90px; text-align: right; border: 1px solid #ccc; border-radius: 4px; padding: 2px;" onchange="cambiarPrecio(${idx}, this.value)"></small></div>
+                <div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="cambiarCant(${idx}, -1)">-</button>
+                    <button class="btn btn-sm btn-outline-success" onclick="cambiarCant(${idx}, 1)">+</button>
+                </div>
             </div>
-          </div>
         `;
-      });
-      totalEl.innerText = `$${total.toLocaleString()}`;
-    }
-
+    });
+    totalEl.innerText = `$${total.toLocaleString()}`;
+}
     function cambiarCant(idx, delta) {
       carrito[idx].cantidad += delta;
       if (carrito[idx].cantidad <= 0) carrito.splice(idx, 1);
       renderizarCarrito();
     }
 
-    async function procesarVentaSupabase() {
-      if (carrito.length === 0) { Swal.fire('Vacío', 'Agregue productos', 'warning'); return; }
-      const medio_pago = document.getElementById('metodo-pago').value;
-      const totalVenta = carrito.reduce((acc, i) => acc + ((i.precio || 0) * i.cantidad), 0);
-      const productoStr = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+  async function procesarVentaSupabase(event) {
+    if (event) event.preventDefault();
+    
+    if (carrito.length === 0) {
+        Swal.fire('Vacío', 'Agregue productos', 'warning');
+        return;
+    }
+    
+    const selectPago = document.getElementById('medio-pago') || document.getElementById('metodo-pago');
+    const medio_pago = selectPago ? selectPago.value : 'Efectivo';
+    
+    const totalVenta = carrito.reduce((acc, i) => acc + ((i.precio || 0) * i.cantidad), 0);
+    const productoStr = carrito.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
 
-      if (supabaseClient) {
+    if (supabaseClient) {
         try {
-          await supabaseClient.from('ventas').insert([{ producto: productoStr, cantidad: 1, total: totalVenta, medio_pago: medio_pago }]);
-        } catch (e) {}
-      }
-      ventasMemoria.push({ total: totalVenta, producto: productoStr, medio_pago: medio_pago, created_at: new Date().toISOString() });
-      ultimoTicket = { fecha: new Date().toLocaleString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }), metodo: medio_pago, items: [...carrito], total: totalVenta };
-      
-      carrito.forEach(item => {
-        const prod = productosCache.find(p => p.id === item.id);
-        if (prod) prod.stock -= item.cantidad;
-      });
-
-      carrito = [];
-      renderizarCarrito();
-      renderizarPOS(productosCache);
-      renderizarInventario(productosCache);
-      calcularCierreCaja();
-      imprimirUltimaFactura();
+            await supabaseClient.from('ventas').insert([{ producto: productoStr, cantidad: 1, total: totalVenta, medio_pago: medio_pago }]);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    function imprimirUltimaFactura() {
-      if (!ultimoTicket) return;
-      document.getElementById('print-fecha').innerText = ultimoTicket.fecha;
-      document.getElementById('print-metodo').innerText = ultimoTicket.metodo;
-      document.getElementById('print-total').innerText = `$${ultimoTicket.total.toLocaleString()}`;
-      let itemsH = '';
-      ultimoTicket.items.forEach(i => {
-        itemsH += `<div style="display:flex; justify-content:space-between; margin: 2px 0;"><span>${i.cantidad}x ${i.nombre}</span><span>$${((i.precio || 0) * i.cantidad).toLocaleString()}</span></div>`;
-      });
-      document.getElementById('print-items').innerHTML = itemsH;
-      const areaImpresion = document.getElementById('area-impresion');
-      areaImpresion.style.display = 'block';
-      setTimeout(() => {
+    ventasMemoria.push({ total: totalVenta, producto: productoStr, medio_pago: medio_pago, created_at: new Date().toLocaleString() });
+    ultimoTicket = { fecha: new Date().toLocaleString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true }), productos: [...carrito], total: totalVenta, medio_pago: medio_pago };
+    
+   carrito.forEach(itemCarrito => {
+        const prodCache = productosCache.find(p => p.id === itemCarrito.id || p.codigo === itemCarrito.codigo);
+        if (prodCache) {
+            prodCache.stock = Math.max(0, prodCache.stock - itemCarrito.cantidad);
+        }
+    });
+
+    carrito = [];
+    renderizarCarrito();
+    renderizarPOS(productosCache);
+    renderizarInventario(productosCache);
+    if (typeof calcularCierreCaja === 'function') calcularCierreCaja();
+
+    Swal.fire({
+        title: '¡Venta Exitosa!',
+        text: `Total cobrado: $${totalVenta.toLocaleString()}`,
+        icon: 'success',
+        confirmButtonText: 'Ver Factura'
+    }).then(() => {
+        const modalTicket = document.getElementById('modal-ticket') || document.getElementById('ticketModal');
+        if (modalTicket) {
+            modalTicket.style.display = 'block';
+        } else if (typeof mostrarTicketUltimaVenta === 'function') {
+            mostrarTicketUltimaVenta();
+        } else {
+            imprimirUltimaFactura();
+        }
+    });
+}
+   function imprimirUltimaFactura() {
+    if (!ultimoTicket) return;
+    
+   let fechaFormateada = new Date().toLocaleString('es-CO', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: 'numeric', minute: '2-digit', hour12: true 
+    });
+    
+    if (ultimoTicket.fecha) {
+        const d = new Date(ultimoTicket.fecha);
+        if (!isNaN(d)) {
+            const anio = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            const horaFormateada = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+            fechaFormateada = `${dia}/${mes}/${anio} - ${horaFormateada}`;
+        }
+    }
+    
+    document.getElementById('print-fecha').innerText = fechaFormateada;
+    document.getElementById('print-metodo').innerText = ultimoTicket.medio_pago || ultimoTicket.metodo || 'Efectivo';
+    document.getElementById('print-total').innerText = `$${(ultimoTicket.total || 0).toLocaleString()}`;
+    
+    let itemsH = '';
+    // Acepta tanto .items como .productos para que nunca falle
+    const listaProductos = ultimoTicket.items || ultimoTicket.productos || [];
+    
+    listaProductos.forEach(i => {
+        itemsH += `<div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>${i.cantidad}x ${i.nombre || i.descripcion}</span><span>$${((i.precio || 0) * i.cantidad).toLocaleString()}</span></div>`;
+    });
+    
+    document.getElementById('print-items').innerHTML = itemsH;
+    const areaImpresion = document.getElementById('area-impresion');
+    if (areaImpresion) areaImpresion.style.display = 'block';
+    
+    setTimeout(() => {
         window.print();
-        setTimeout(() => { areaImpresion.style.display = 'none'; }, 500);
-      }, 200);
-    }
+        setTimeout(() => {
+            if (areaImpresion) areaImpresion.style.display = 'none';
+        }, 500);
+    }, 200);
+}
 
     async function cargarProveedores() {
       if (supabaseClient) {
